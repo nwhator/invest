@@ -12,7 +12,7 @@ function formatUtc(iso: string) {
 }
 
 export default async function SuggestionsPage() {
-  const suggestions = await getDailySuggestions({ hoursAhead: 24, minEv: 0.01, limit: 25 });
+  const suggestions = await getDailySuggestions({ hoursAhead: 24, minEv: 0.0, limit: 25, prioritizeTennis: true });
 
   return (
     <main className="mx-auto max-w-5xl p-8">
@@ -25,7 +25,7 @@ export default async function SuggestionsPage() {
       <h1 className="mt-2 text-2xl font-semibold">Suggestions (next 24h)</h1>
       <p className="mt-2 text-sm text-zinc-600">
         MVP model: derives a fair probability from the latest odds snapshot (average implied probs across books, then
-        normalized to remove vig). Suggestions are outcomes with positive estimated value.
+        normalized to remove vig). Suggestions prefer tennis first and smaller odds (lowest price) for rollover-style play.
       </p>
 
       <div className="mt-6 overflow-x-auto rounded-lg border">
@@ -37,7 +37,7 @@ export default async function SuggestionsPage() {
               <th className="border-b p-3">Event</th>
               <th className="border-b p-3">Market</th>
               <th className="border-b p-3">Outcome</th>
-              <th className="border-b p-3">Best price</th>
+              <th className="border-b p-3">Lowest price</th>
               <th className="border-b p-3">Fair prob</th>
               <th className="border-b p-3">EV</th>
             </tr>

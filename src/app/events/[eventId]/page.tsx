@@ -33,8 +33,25 @@ export default async function EventPage({ params }: Props) {
   const recentBets = await listBetsForEvent(eventId, 25);
 
   const oddsRows = latestOdds?.rows ?? [];
-  const groupedByMarket: Record<string, typeof oddsRows> = {};
+
+  // Keep only the lowest decimal price per (market, outcome, line).
+  // This makes the table + pick dropdown easier to use.
+  const lowestByOutcome = new Map<string, (typeof oddsRows)[number]>();
   for (const row of oddsRows) {
+    const k = [row.market_key, row.outcome_key, row.line ?? ""].join("|");
+    const existing = lowestByOutcome.get(k);
+    if (!existing || row.price < existing.price) {
+      lowestByOutcome.set(k, row);
+    }
+  }
+
+  const lowestOddsRows = Array.from(lowestByOutcome.values()).map((r) => ({
+    ...r,
+    // Ensure unique keys even though we've de-duped.
+    id: [r.market_key, r.outcome_key, r.line ?? "", r.bookmaker].join("|"),
+  }));
+  const groupedByMarket: Record<string, typeof oddsRows> = {};
+  for (const row of lowestOddsRows) {
     (groupedByMarket[row.market_key] ??= []).push(row);
   }
 
@@ -54,7 +71,7 @@ export default async function EventPage({ params }: Props) {
       </div>
 
       <div className="mt-6 rounded-lg border p-4">
-        <div className="text-sm font-medium">Latest odds snapshot</div>
+        <div className="text-sm font-medium">Latest odds snapshot (lowest price per outcome)</div>
         <div className="mt-1 text-xs text-zinc-500">
           {latestOdds ? `Snapshot: ${formatUtc(latestOdds.snapshotTimeUtc)}` : "No odds yet."}
         </div>
@@ -77,7 +94,7 @@ export default async function EventPage({ params }: Props) {
                     <tbody>
                       {rows
                         .slice()
-                        .sort((a, b) => (a.bookmaker < b.bookmaker ? -1 : 1))
+                        .sort((a, b) => a.price - b.price)
                         .map((r) => (
                           <tr key={r.id}>
                             <td className="border-b p-2 font-mono text-xs">{r.bookmaker}</td>
@@ -102,7 +119,7 @@ export default async function EventPage({ params }: Props) {
         </p>
 
         <div className="mt-4">
-          <BetForm eventId={eventId} oddsRows={latestOdds?.rows ?? []} />
+          <BetForm eventId={eventId} oddsRows={lowestOddsRows} />
         </div>
       </div>
 

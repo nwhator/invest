@@ -68,10 +68,13 @@ export async function getDailySuggestions(options?: {
   hoursAhead?: number;
   minEv?: number;
   limit?: number;
+  // Put tennis events first.
+  prioritizeTennis?: boolean;
 }): Promise<Suggestion[]> {
   const hoursAhead = options?.hoursAhead ?? 24;
   const minEv = options?.minEv ?? 0.01;
   const limit = options?.limit ?? 30;
+  const prioritizeTennis = options?.prioritizeTennis ?? true;
 
   const sb = supabaseAdmin();
 
@@ -146,8 +149,9 @@ export async function getDailySuggestions(options?: {
       if (arr) arr.push(implied);
       else impliedByOutcome.set(ok, [implied]);
 
+      // "Best" for this UX = lowest decimal odds available (safer / smaller odds).
       const existingBest = bestByOutcome.get(ok);
-      if (!existingBest || row.price > existingBest.price) {
+      if (!existingBest || row.price < existingBest.price) {
         bestByOutcome.set(ok, row);
       }
     }
@@ -188,6 +192,19 @@ export async function getDailySuggestions(options?: {
     }
   }
 
-  suggestions.sort((a, b) => b.ev - a.ev);
+  suggestions.sort((a, b) => {
+    const aIsTennis = a.sportKey.startsWith("tennis_");
+    const bIsTennis = b.sportKey.startsWith("tennis_");
+    if (prioritizeTennis && aIsTennis !== bIsTennis) return aIsTennis ? -1 : 1;
+
+    // Prefer smaller odds (safer / rollover style).
+    if (a.bestPrice !== b.bestPrice) return a.bestPrice - b.bestPrice;
+
+    // Then higher fair probability.
+    if (a.fairProb !== b.fairProb) return b.fairProb - a.fairProb;
+
+    // Finally, higher EV.
+    return b.ev - a.ev;
+  });
   return suggestions.slice(0, limit);
 }
