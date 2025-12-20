@@ -1,4 +1,4 @@
-# Betting prediction MVP (Next.js + Supabase + Vercel Cron)
+# Betting prediction MVP (Next.js + Supabase)
 
 This repo is an MVP scaffold for:
 
@@ -24,8 +24,7 @@ Required:
 
 Optional:
 
-- `CRON_SECRET` (lets you run cron routes locally)
-- `ADMIN_SECRET` (protects the admin result entry endpoint)
+- `ADMIN_SECRET` (protects admin endpoints)
 
 ## Local dev
 
@@ -38,19 +37,19 @@ Homepage shows upcoming events from Supabase.
 
 ## Ingest odds
 
-Vercel cron is configured in [vercel.json](vercel.json) to call:
+This project does not rely on scheduled cron jobs.
 
-- `/api/cron/ingest-odds` every 10 minutes
+Manual trigger options (requires `ADMIN_SECRET`):
 
-Local/manual trigger (requires `CRON_SECRET`):
-
-`GET http://localhost:3000/api/cron/ingest-odds?secret=YOUR_CRON_SECRET`
+- UI: `/admin/ingest-odds`
+- API: `POST http://localhost:3000/api/admin/ingest-odds?secret=YOUR_ADMIN_SECRET`
 
 ## Use the UI
 
 - `/` lists upcoming events
 - `/suggestions` shows “pick ideas” for the next 24h
 - `/events/:eventId` shows latest odds and lets you save a friend pick
+- `/admin/ingest-odds` lets you manually ingest odds (requires `ADMIN_SECRET`)
 - `/admin/results` lets you enter a final score (requires `ADMIN_SECRET`)
 
 ## Enter results + settle picks

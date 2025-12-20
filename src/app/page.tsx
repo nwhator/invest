@@ -19,6 +19,9 @@ export default async function Home() {
         <Link className="underline" href="/suggestions">
           Suggestions
         </Link>
+        <Link className="underline" href="/admin/ingest-odds">
+          Admin: ingest odds
+        </Link>
         <Link className="underline" href="/admin/results">
           Admin: results
         </Link>
@@ -38,7 +41,7 @@ export default async function Home() {
             {events.length === 0 ? (
               <tr>
                 <td className="p-3 text-zinc-600" colSpan={4}>
-                  No upcoming events yet. Run the cron ingestion endpoint to populate.
+                  No upcoming events yet. Use Admin: ingest odds to populate.
                 </td>
               </tr>
             ) : (
@@ -57,18 +60,6 @@ export default async function Home() {
             )}
           </tbody>
         </table>
-      </div>
-
-      <div className="mt-6 rounded-lg border p-4">
-        <div className="text-sm font-medium">Cron endpoints</div>
-        <div className="mt-2 text-sm text-zinc-700">
-          <div>
-            <span className="font-mono">/api/cron/ingest-odds</span>
-          </div>
-          <div>
-            <span className="font-mono">/api/cron/quality-check</span> (placeholder)
-          </div>
-        </div>
       </div>
     </main>
   );

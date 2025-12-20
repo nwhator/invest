@@ -1,12 +1,1 @@
-{
-  "crons": [
-    {
-      "path": "/api/cron/ingest-odds",
-      "schedule": "*/10 * * * *"
-    },
-    {
-      "path": "/api/cron/quality-check",
-      "schedule": "15 * * * *"
-    }
-  ]
-}
+{}
