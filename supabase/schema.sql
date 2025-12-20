@@ -89,6 +89,31 @@ create table if not exists public.predictions (
 create index if not exists predictions_event_time_idx
   on public.predictions (event_id, generated_time_utc desc);
 
+create table if not exists public.bets (
+  id uuid primary key default gen_random_uuid(),
+
+  event_id uuid not null references public.events(id) on delete cascade,
+
+  friend_name text not null,
+
+  market_key text not null,        -- h2h | spreads | totals
+  outcome_key text not null,       -- home/away/draw/over/under or normalized name
+  outcome_name text,
+  line numeric,
+  odds_price_used numeric not null,
+
+  stake numeric not null default 1,
+  placed_time_utc timestamptz not null default now(),
+
+  settlement text,                 -- win | lose | push | half_win | half_lose (nullable until settled)
+  payout numeric,
+
+  created_at timestamptz not null default now()
+);
+
+create index if not exists bets_event_time_idx
+  on public.bets (event_id, placed_time_utc desc);
+
 -- Optional: keep updated_at current
 create or replace function public.set_updated_at()
 returns trigger as $$

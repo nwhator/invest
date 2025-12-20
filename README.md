@@ -1,34 +1,79 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Betting prediction MVP (Next.js + Supabase + Vercel Cron)
 
-## Getting Started
+This repo is an MVP scaffold for:
 
-First, run the development server:
+- ingesting odds from The Odds API into Supabase
+- letting friends save simple picks against the latest odds snapshot
+- manually entering results (admin secret) to settle **h2h** picks
+
+This app does **not** place bets. It only generates suggestions and tracks picks.
+
+## Supabase setup
+
+1) Run the SQL schema in [supabase/schema.sql](supabase/schema.sql) using the Supabase SQL editor.
+
+2) Add environment variables (locally and on Vercel)
+
+Use [.env.example](.env.example) as a template.
+
+Required:
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY` (server-only)
+- `ODDS_API_KEY`
+
+Optional:
+
+- `CRON_SECRET` (lets you run cron routes locally)
+- `ADMIN_SECRET` (protects the admin result entry endpoint)
+
+## Local dev
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Homepage shows upcoming events from Supabase.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Ingest odds
 
-## Learn More
+Vercel cron is configured in [vercel.json](vercel.json) to call:
 
-To learn more about Next.js, take a look at the following resources:
+- `/api/cron/ingest-odds` every 10 minutes
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Local/manual trigger (requires `CRON_SECRET`):
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+`GET http://localhost:3000/api/cron/ingest-odds?secret=YOUR_CRON_SECRET`
 
-## Deploy on Vercel
+## Use the UI
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `/` lists upcoming events
+- `/suggestions` shows “pick ideas” for the next 24h
+- `/events/:eventId` shows latest odds and lets you save a friend pick
+- `/admin/results` lets you enter a final score (requires `ADMIN_SECRET`)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Enter results + settle picks
+
+The admin endpoint settles only **h2h** picks for now.
+
+1) Go to `/admin/results`
+2) Paste `ADMIN_SECRET`
+3) Paste the event UUID from the event page URL
+4) Enter the final score and submit
+
+This writes to `results`, sets `events.status='final'`, and settles any un-settled `bets` rows for that event.
+
+## Notes
+
+- This MVP uses server-side Supabase access via the service role key. Do not expose the service role key to the browser.
+- Odds ingestion stores append-only snapshots in `odds_snapshots`.
+
+## ML (optional)
+
+There is a starter ML folder at [ml/](ml/) and a GitHub Actions workflow at [.github/workflows/ml-train.yml](.github/workflows/ml-train.yml).
+
+To enable it:
+
+- Add repo secrets: `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`
+- Run the workflow manually (Actions tab) or wait for the nightly schedule
