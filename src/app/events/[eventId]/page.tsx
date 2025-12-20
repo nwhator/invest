@@ -20,9 +20,9 @@ export default async function EventPage({ params }: Props) {
   const event = await getEventById(eventId);
   if (!event) {
     return (
-      <main className="mx-auto max-w-4xl p-8">
-        <h1 className="text-xl font-semibold">Event not found</h1>
-        <Link className="mt-4 inline-block underline" href="/">
+      <main className="mx-auto max-w-5xl px-6 py-8">
+        <h1 className="text-xl font-semibold tracking-tight">Event not found</h1>
+        <Link className="mt-4 inline-block underline decoration-zinc-300 hover:decoration-zinc-600" href="/">
           Back
         </Link>
       </main>
@@ -56,21 +56,21 @@ export default async function EventPage({ params }: Props) {
   }
 
   return (
-    <main className="mx-auto max-w-4xl p-8">
+    <main className="mx-auto max-w-5xl px-6 py-8">
       <div className="text-sm text-zinc-600">
-        <Link className="underline" href="/">
+        <Link className="underline decoration-zinc-300 hover:decoration-zinc-600" href="/">
           Events
         </Link>
       </div>
 
-      <h1 className="mt-2 text-2xl font-semibold">
+      <h1 className="mt-2 text-2xl font-semibold tracking-tight">
         {event.home_name} vs {event.away_name}
       </h1>
       <div className="mt-1 text-sm text-zinc-600">
         {event.sport_key} • {formatUtc(event.commence_time_utc)}
       </div>
 
-      <div className="mt-6 rounded-lg border p-4">
+      <div className="mt-6 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
         <div className="text-sm font-medium">Latest odds snapshot (lowest price per outcome)</div>
         <div className="mt-1 text-xs text-zinc-500">
           {latestOdds ? `Snapshot: ${formatUtc(latestOdds.snapshotTimeUtc)}` : "No odds yet."}
@@ -81,14 +81,14 @@ export default async function EventPage({ params }: Props) {
             {Object.entries(groupedByMarket).map(([marketKey, rows]) => (
               <div key={marketKey}>
                 <div className="text-sm font-semibold">{marketKey}</div>
-                <div className="mt-2 overflow-x-auto">
+                <div className="mt-2 overflow-x-auto rounded-lg border border-zinc-200">
                   <table className="min-w-full border-collapse text-sm">
                     <thead>
-                      <tr className="text-left text-zinc-600">
-                        <th className="border-b p-2">Bookmaker</th>
-                        <th className="border-b p-2">Outcome</th>
-                        <th className="border-b p-2">Line</th>
-                        <th className="border-b p-2">Price</th>
+                      <tr className="bg-zinc-50 text-left text-zinc-600">
+                        <th className="border-b border-zinc-200 p-2">Bookmaker</th>
+                        <th className="border-b border-zinc-200 p-2">Outcome</th>
+                        <th className="border-b border-zinc-200 p-2">Line</th>
+                        <th className="border-b border-zinc-200 p-2">Price</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -96,11 +96,15 @@ export default async function EventPage({ params }: Props) {
                         .slice()
                         .sort((a, b) => a.price - b.price)
                         .map((r) => (
-                          <tr key={r.id}>
-                            <td className="border-b p-2 font-mono text-xs">{r.bookmaker}</td>
-                            <td className="border-b p-2">{r.outcome_name ?? r.outcome_key}</td>
-                            <td className="border-b p-2">{r.line ?? "—"}</td>
-                            <td className="border-b p-2">{r.price}</td>
+                          <tr key={r.id} className="hover:bg-zinc-50">
+                            <td className="border-b border-zinc-100 p-2 font-mono text-xs text-zinc-700">
+                              {r.bookmaker}
+                            </td>
+                            <td className="border-b border-zinc-100 p-2 text-zinc-800">
+                              {r.outcome_name ?? r.outcome_key}
+                            </td>
+                            <td className="border-b border-zinc-100 p-2 text-zinc-700">{r.line ?? "—"}</td>
+                            <td className="border-b border-zinc-100 p-2 text-zinc-800">{r.price}</td>
                           </tr>
                         ))}
                     </tbody>
@@ -112,7 +116,7 @@ export default async function EventPage({ params }: Props) {
         )}
       </div>
 
-      <div className="mt-6 rounded-lg border p-4">
+      <div className="mt-6 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
         <div className="text-sm font-medium">Place a friend pick</div>
         <p className="mt-1 text-sm text-zinc-600">
           Saves a pick into the <span className="font-mono">bets</span> table (no auth yet).
@@ -123,31 +127,31 @@ export default async function EventPage({ params }: Props) {
         </div>
       </div>
 
-      <div className="mt-6 rounded-lg border p-4">
+      <div className="mt-6 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
         <div className="text-sm font-medium">Recent picks</div>
         {recentBets.length === 0 ? (
           <p className="mt-2 text-sm text-zinc-600">No picks yet.</p>
         ) : (
-          <div className="mt-3 overflow-x-auto">
+          <div className="mt-3 overflow-x-auto rounded-lg border border-zinc-200">
             <table className="min-w-full border-collapse text-sm">
               <thead>
-                <tr className="text-left text-zinc-600">
-                  <th className="border-b p-2">Friend</th>
-                  <th className="border-b p-2">Selection</th>
-                  <th className="border-b p-2">Stake</th>
-                  <th className="border-b p-2">Settlement</th>
+                <tr className="bg-zinc-50 text-left text-zinc-600">
+                  <th className="border-b border-zinc-200 p-2">Friend</th>
+                  <th className="border-b border-zinc-200 p-2">Selection</th>
+                  <th className="border-b border-zinc-200 p-2">Stake</th>
+                  <th className="border-b border-zinc-200 p-2">Settlement</th>
                 </tr>
               </thead>
               <tbody>
                 {recentBets.map((b) => (
-                  <tr key={b.id}>
-                    <td className="border-b p-2">{b.friend_name}</td>
-                    <td className="border-b p-2">
+                  <tr key={b.id} className="hover:bg-zinc-50">
+                    <td className="border-b border-zinc-100 p-2 text-zinc-800">{b.friend_name}</td>
+                    <td className="border-b border-zinc-100 p-2 text-zinc-800">
                       {b.market_key} • {b.outcome_name ?? b.outcome_key}
                       {b.line === null ? "" : ` (${b.line})`} @ {b.odds_price_used}
                     </td>
-                    <td className="border-b p-2">{b.stake}</td>
-                    <td className="border-b p-2">{b.settlement ?? "—"}</td>
+                    <td className="border-b border-zinc-100 p-2 text-zinc-700">{b.stake}</td>
+                    <td className="border-b border-zinc-100 p-2 text-zinc-700">{b.settlement ?? "—"}</td>
                   </tr>
                 ))}
               </tbody>

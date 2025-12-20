@@ -1,1 +1,15 @@
 @import "tailwindcss";
+
+html,
+body {
+	height: 100%;
+}
+
+a {
+	text-underline-offset: 3px;
+}
+
+:where(a, button, input, select, textarea):focus-visible {
+	outline: 2px solid currentColor;
+	outline-offset: 2px;
+}

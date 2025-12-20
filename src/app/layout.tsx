@@ -13,7 +13,15 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className="min-h-screen bg-zinc-50 text-zinc-900 antialiased">
+        <div className="sticky top-0 z-10 border-b border-zinc-200 bg-white/80 backdrop-blur">
+          <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
+            <div className="text-sm font-semibold tracking-tight">Bet 2026</div>
+            <div className="text-xs text-zinc-500">Odds + picks tracker</div>
+          </div>
+        </div>
+        {children}
+      </body>
     </html>
   );
 }

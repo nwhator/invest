@@ -11,30 +11,41 @@ export default async function Home() {
   const events = await listUpcomingEvents(50);
 
   return (
-    <main className="mx-auto max-w-4xl p-8">
-      <h1 className="text-2xl font-semibold">Events</h1>
-      <p className="mt-2 text-sm text-zinc-600">Upcoming events ingested into Supabase.</p>
+    <main className="mx-auto max-w-5xl px-6 py-8">
+      <div className="flex flex-col gap-1">
+        <h1 className="text-2xl font-semibold tracking-tight">Events</h1>
+        <p className="text-sm text-zinc-600">Upcoming events ingested into Supabase.</p>
+      </div>
 
-      <div className="mt-4 flex gap-4 text-sm">
-        <Link className="underline" href="/suggestions">
+      <div className="mt-4 flex flex-wrap gap-2 text-sm">
+        <Link
+          className="inline-flex items-center rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-zinc-800 shadow-sm hover:bg-zinc-50"
+          href="/suggestions"
+        >
           Suggestions
         </Link>
-        <Link className="underline" href="/admin/ingest-odds">
+        <Link
+          className="inline-flex items-center rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-zinc-800 shadow-sm hover:bg-zinc-50"
+          href="/admin/ingest-odds"
+        >
           Admin: ingest odds
         </Link>
-        <Link className="underline" href="/admin/results">
+        <Link
+          className="inline-flex items-center rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-zinc-800 shadow-sm hover:bg-zinc-50"
+          href="/admin/results"
+        >
           Admin: results
         </Link>
       </div>
 
-      <div className="mt-6 overflow-x-auto rounded-lg border">
+      <div className="mt-6 overflow-x-auto rounded-xl border border-zinc-200 bg-white shadow-sm">
         <table className="min-w-full border-collapse text-sm">
           <thead>
-            <tr className="text-left text-zinc-600">
-              <th className="border-b p-3">Time</th>
-              <th className="border-b p-3">Sport</th>
-              <th className="border-b p-3">Match</th>
-              <th className="border-b p-3">Status</th>
+            <tr className="bg-zinc-50 text-left text-zinc-600">
+              <th className="border-b border-zinc-200 p-3">Time</th>
+              <th className="border-b border-zinc-200 p-3">Sport</th>
+              <th className="border-b border-zinc-200 p-3">Match</th>
+              <th className="border-b border-zinc-200 p-3">Status</th>
             </tr>
           </thead>
           <tbody>
@@ -46,15 +57,15 @@ export default async function Home() {
               </tr>
             ) : (
               events.map((e) => (
-                <tr key={e.id}>
-                  <td className="border-b p-3 whitespace-nowrap">{formatUtc(e.commence_time_utc)}</td>
-                  <td className="border-b p-3 font-mono text-xs">{e.sport_key}</td>
-                  <td className="border-b p-3">
-                    <Link className="underline" href={`/events/${e.id}`}>
+                <tr key={e.id} className="hover:bg-zinc-50">
+                  <td className="border-b border-zinc-100 p-3 whitespace-nowrap">{formatUtc(e.commence_time_utc)}</td>
+                  <td className="border-b border-zinc-100 p-3 font-mono text-xs text-zinc-700">{e.sport_key}</td>
+                  <td className="border-b border-zinc-100 p-3">
+                    <Link className="underline decoration-zinc-300 hover:decoration-zinc-600" href={`/events/${e.id}`}>
                       {e.home_name} vs {e.away_name}
                     </Link>
                   </td>
-                  <td className="border-b p-3">{e.status}</td>
+                  <td className="border-b border-zinc-100 p-3 text-zinc-700">{e.status}</td>
                 </tr>
               ))
             )}
