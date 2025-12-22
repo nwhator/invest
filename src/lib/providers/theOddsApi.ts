@@ -130,6 +130,12 @@ export async function resolveSportKeys(inputKeys: string[]): Promise<{ keys: str
     // Aliases should already be stripped by expandSportKeys, but keep this defensive.
     const lower = key.toLowerCase();
     if (lower === "tennis" || lower === "tennis_all") continue;
+    // The Odds API supports a special 'upcoming' key for cross-sport upcoming events.
+    // It is not guaranteed to appear in /v4/sports, so treat it as always valid.
+    if (lower === "upcoming") {
+      keys.push("upcoming");
+      continue;
+    }
     if (valid.has(key)) keys.push(key);
     else skipped.push(key);
   }

@@ -27,20 +27,31 @@ export async function GET(req: NextRequest) {
     const includeAllSports = req.nextUrl.searchParams.get("all") === "true";
     const sports = await fetchSports(includeAllSports);
 
-    const tennisActive = sports
-      .filter((s) => s.active)
-      .filter((s) => String(s.group).toLowerCase() === "tennis" || String(s.key).toLowerCase().startsWith("tennis_"))
-      .filter((s) => !s.has_outrights);
-
-    // Also return "all tennis" keys from /sports?all=true for convenience.
+    // Always compute the full (all=true) view as well, so admins can discover inactive keys.
     const sportsAll = await fetchSports(true);
-    const tennisAll = sportsAll
-      .filter((s) => String(s.group).toLowerCase() === "tennis" || String(s.key).toLowerCase().startsWith("tennis_"))
-      .filter((s) => !s.has_outrights);
+
+    const active = sportsAll.filter((s) => s.active);
+    const activeNonOutrights = active.filter((s) => !s.has_outrights);
+    const allNonOutrights = sportsAll.filter((s) => !s.has_outrights);
+
+    const tennisActive = activeNonOutrights.filter(
+      (s) => String(s.group).toLowerCase() === "tennis" || String(s.key).toLowerCase().startsWith("tennis_")
+    );
+    const tennisAll = allNonOutrights.filter(
+      (s) => String(s.group).toLowerCase() === "tennis" || String(s.key).toLowerCase().startsWith("tennis_")
+    );
 
     return NextResponse.json({
       ok: true,
       count: sports.length,
+      activeCount: active.length,
+      activeKeys: active.map((s) => s.key),
+      activeNonOutrightCount: activeNonOutrights.length,
+      activeNonOutrightKeys: activeNonOutrights.map((s) => s.key),
+      allCount: sportsAll.length,
+      allKeys: sportsAll.map((s) => s.key),
+      allNonOutrightCount: allNonOutrights.length,
+      allNonOutrightKeys: allNonOutrights.map((s) => s.key),
       tennisActiveCount: tennisActive.length,
       tennisActiveKeys: tennisActive.map((s) => s.key),
       tennisAllCount: tennisAll.length,

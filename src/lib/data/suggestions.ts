@@ -168,6 +168,7 @@ export async function getDailySuggestions(options?: {
   minEv?: number;
   limit?: number;
   // Put tennis events first.
+  // (Kept for backward compatibility; default is now false.)
   prioritizeTennis?: boolean;
 
   // Odds-only robustness.
@@ -179,7 +180,7 @@ export async function getDailySuggestions(options?: {
   const hoursAhead = options?.hoursAhead ?? 24;
   const minEv = options?.minEv ?? 0.01;
   const limit = options?.limit ?? 30;
-  const prioritizeTennis = options?.prioritizeTennis ?? true;
+  const prioritizeTennis = options?.prioritizeTennis ?? false;
   const minBooks = options?.minBooks ?? 3;
   const useTennisElo = options?.useTennisElo ?? true;
 
@@ -195,7 +196,6 @@ export async function getDailySuggestions(options?: {
     .select(
       "event_id,bookmaker,market_key,outcome_key,outcome_name,line,price,snapshot_time_utc,events!inner(sport_key,commence_time_utc,home_name,away_name)"
     )
-    .like("events.sport_key", "tennis_%")
     .gte("events.commence_time_utc", now.toISOString())
     .lte("events.commence_time_utc", end.toISOString())
     .order("snapshot_time_utc", { ascending: false })
