@@ -62,10 +62,26 @@ async function ingestOdds() {
   let upsertedEvents = 0;
   let insertedSnapshots = 0;
 
+  const debugBySport: Array<{
+    sportKey: string;
+    eventsFetched: number;
+    eventsWithBookmakers: number;
+    snapshotsPrepared: number;
+  }> = [];
+
   // Tennis-only: resolve keys using the official /v4/sports list and skip invalid ones.
   // Recommended env: ODDS_SPORT_KEYS=tennis
   const { keys: resolvedSportKeys, skipped } = await resolveSportKeys(cfg.sportKeys.length ? cfg.sportKeys : ["tennis"]);
   const tennisOnly = resolvedSportKeys.filter((k) => k.toLowerCase().startsWith("tennis_"));
+
+  if (tennisOnly.length === 0) {
+    throw new Error(
+      `No tennis sport keys resolved from ODDS_SPORT_KEYS.\n` +
+        `Set ODDS_SPORT_KEYS=tennis (recommended) or pick specific keys from /api/admin/odds-sports?secret=YOUR_ADMIN_SECRET.\n` +
+        `Resolved non-tennis keys: ${resolvedSportKeys.join(",") || "(none)"}\n` +
+        `Skipped invalid keys: ${skipped.join(",") || "(none)"}`
+    );
+  }
 
   for (const sportKey of tennisOnly) {
     let events;
@@ -82,6 +98,9 @@ async function ingestOdds() {
       }
       throw e;
     }
+
+    let eventsWithBookmakers = 0;
+    let snapshotsPrepared = 0;
 
     for (const ev of events) {
       const { data: upserted, error: upsertErr } = await sb
@@ -130,6 +149,9 @@ async function ingestOdds() {
         }
       }
 
+      if ((ev.bookmakers ?? []).length > 0) eventsWithBookmakers += 1;
+      snapshotsPrepared += snapshots.length;
+
       if (snapshots.length) {
         const { error: insertErr } = await sb.from("odds_snapshots").insert(snapshots);
         if (insertErr) {
@@ -138,16 +160,30 @@ async function ingestOdds() {
         insertedSnapshots += snapshots.length;
       }
     }
+
+    debugBySport.push({
+      sportKey,
+      eventsFetched: events.length,
+      eventsWithBookmakers,
+      snapshotsPrepared,
+    });
   }
 
-  return { upsertedEvents, insertedSnapshots, usedSportKeys: tennisOnly, skippedSportKeys: skipped };
+  return {
+    upsertedEvents,
+    insertedSnapshots,
+    usedSportKeys: tennisOnly,
+    skippedSportKeys: skipped,
+    debugBySport,
+    cfg: { regions: cfg.regions, markets: cfg.markets, oddsFormat: cfg.oddsFormat, dateFormat: cfg.dateFormat },
+  };
 }
 
 export async function GET(req: NextRequest) {
   try {
     assertAdmin(req);
-    const { upsertedEvents, insertedSnapshots, usedSportKeys, skippedSportKeys } = await ingestOdds();
-    return NextResponse.json({ ok: true, upsertedEvents, insertedSnapshots, usedSportKeys, skippedSportKeys });
+    const result = await ingestOdds();
+    return NextResponse.json({ ok: true, ...result });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json({ ok: false, error: message }, { status: 500 });
@@ -157,8 +193,8 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     assertAdmin(req);
-    const { upsertedEvents, insertedSnapshots, usedSportKeys, skippedSportKeys } = await ingestOdds();
-    return NextResponse.json({ ok: true, upsertedEvents, insertedSnapshots, usedSportKeys, skippedSportKeys });
+    const result = await ingestOdds();
+    return NextResponse.json({ ok: true, ...result });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json({ ok: false, error: message }, { status: 500 });
