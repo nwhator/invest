@@ -78,12 +78,111 @@ async function ingestOdds() {
   const tennisOnly = resolvedSportKeys.filter((k) => k.toLowerCase().startsWith("tennis_"));
 
   if (tennisOnly.length === 0) {
-    throw new Error(
-      `No tennis sport keys resolved from ODDS_SPORT_KEYS.\n` +
-        `Set ODDS_SPORT_KEYS=tennis (recommended) or pick specific keys from /api/admin/odds-sports?secret=YOUR_ADMIN_SECRET.\n` +
-        `Resolved non-tennis keys: ${resolvedSportKeys.join(",") || "(none)"}\n` +
-        `Skipped invalid keys: ${skipped.join(",") || "(none)"}`
-    );
+    // Some Odds API accounts/plans do not include tennis keys in /v4/sports.
+    // As a last resort, try the special 'upcoming' sport (always valid) and filter tennis from it.
+    const primaryUpcoming = await fetchOddsForSport("upcoming", { regions: cfg.regions, markets: "h2h" }).catch(() => []);
+    const primaryTennisUpcoming = (primaryUpcoming ?? []).filter((e) => String(e.sport_key).toLowerCase().startsWith("tennis_"));
+
+    // If tennis exists but has no bookmakers in the configured region, retry with broader regions.
+    const primaryHasBookmakers = primaryTennisUpcoming.some((e) => (e.bookmakers ?? []).length > 0);
+    const fallbackRegions = "us,eu,uk,au";
+
+    const fallbackUpcoming =
+      !primaryHasBookmakers && cfg.regions !== fallbackRegions
+        ? await fetchOddsForSport("upcoming", { regions: fallbackRegions, markets: "h2h" }).catch(() => [])
+        : [];
+    const fallbackTennisUpcoming = (fallbackUpcoming ?? []).filter((e) => String(e.sport_key).toLowerCase().startsWith("tennis_"));
+
+    const tennisUpcoming =
+      fallbackTennisUpcoming.some((e) => (e.bookmakers ?? []).length > 0) ? fallbackTennisUpcoming : primaryTennisUpcoming;
+    const usedRegions = tennisUpcoming === fallbackTennisUpcoming ? fallbackRegions : cfg.regions;
+
+    if (tennisUpcoming.length === 0) {
+      throw new Error(
+        `Your Odds API /sports list contains no tennis keys, and the 'upcoming' feed returned no tennis events.\n` +
+          `This usually means your Odds API plan/account does not currently provide tennis coverage.\n` +
+          `Resolved non-tennis keys: ${resolvedSportKeys.join(",") || "(none)"}\n` +
+          `Skipped invalid keys: ${skipped.join(",") || "(none)"}\n` +
+          `Try /api/admin/odds-sports?secret=YOUR_ADMIN_SECRET and look for tennisAllKeys; if it's empty, tennis isn't available on this key.`
+      );
+    }
+
+    // If tennis appears via 'upcoming', ingest those events only.
+    for (const ev of tennisUpcoming) {
+      const { data: upserted, error: upsertErr } = await sb
+        .from("events")
+        .upsert(
+          {
+            sport_key: ev.sport_key,
+            league_key: ev.sport_key,
+            commence_time_utc: ev.commence_time,
+            home_name: ev.home_team,
+            away_name: ev.away_team,
+            odds_provider: "the-odds-api",
+            odds_provider_event_id: ev.id,
+            status: "scheduled",
+          },
+          {
+            onConflict: "odds_provider,odds_provider_event_id",
+          }
+        )
+        .select("id")
+        .single();
+
+      if (upsertErr || !upserted) {
+        throw new Error(`Failed to upsert event: ${upsertErr?.message ?? "unknown"}`);
+      }
+
+      upsertedEvents += 1;
+
+      const snapshots: SnapshotInsert[] = [];
+      for (const bookmaker of ev.bookmakers ?? []) {
+        for (const market of bookmaker.markets ?? []) {
+          for (const out of market.outcomes ?? []) {
+            snapshots.push({
+              event_id: upserted.id,
+              provider: "the-odds-api",
+              bookmaker: bookmaker.key,
+              market_key: market.key,
+              outcome_key: outcomeKey(market.key, out.name, { homeName: ev.home_team, awayName: ev.away_team }),
+              outcome_name: out.name,
+              line: out.point ?? null,
+              price: out.price,
+              snapshot_time_utc: snapshotTime,
+              raw: { sportKey: "upcoming", eventId: ev.id },
+            });
+          }
+        }
+      }
+
+      if (snapshots.length) {
+        const { error: insertErr } = await sb.from("odds_snapshots").insert(snapshots);
+        if (insertErr) throw new Error(`Failed to insert snapshots: ${insertErr.message}`);
+        insertedSnapshots += snapshots.length;
+      }
+    }
+
+    debugBySport.push({
+      sportKey: "upcoming",
+      attempt: usedRegions === cfg.regions ? "primary" : "fallback",
+      regions: usedRegions,
+      markets: "h2h",
+      eventsFetched: tennisUpcoming.length,
+      eventsWithBookmakers: tennisUpcoming.filter((e) => (e.bookmakers ?? []).length > 0).length,
+      snapshotsPrepared: tennisUpcoming.reduce((acc, e) => {
+        const count = (e.bookmakers ?? []).reduce((a, b) => a + (b.markets ?? []).reduce((c, m) => c + (m.outcomes ?? []).length, 0), 0);
+        return acc + count;
+      }, 0),
+    });
+
+    return {
+      upsertedEvents,
+      insertedSnapshots,
+      usedSportKeys: ["upcoming"],
+      skippedSportKeys: skipped,
+      debugBySport,
+      cfg: { regions: cfg.regions, markets: "h2h", oddsFormat: cfg.oddsFormat, dateFormat: cfg.dateFormat },
+    };
   }
 
   for (const sportKey of tennisOnly) {
