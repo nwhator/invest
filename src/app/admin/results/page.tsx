@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 export default function AdminResultsPage() {
   return (
-    <main className="mx-auto max-w-3xl px-6 py-8">
+    <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
       <div className="text-sm text-zinc-600">
         <Link className="underline decoration-zinc-300 hover:decoration-zinc-600" href="/">
           Events
@@ -19,7 +19,7 @@ export default function AdminResultsPage() {
       </p>
 
       <form
-        className="mt-6 grid gap-3 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm"
+        className="mt-6 grid gap-3 rounded-xl border border-zinc-200/80 bg-white p-5 shadow-sm"
         onSubmit={(e) => {
           e.preventDefault();
           const form = e.currentTarget;
@@ -90,7 +90,7 @@ export default function AdminResultsPage() {
         </div>
 
         <button
-          className="rounded-md bg-zinc-900 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-zinc-800"
+          className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-500"
           type="submit"
         >
           Save result + settle

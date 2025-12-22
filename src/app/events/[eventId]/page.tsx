@@ -20,7 +20,7 @@ export default async function EventPage({ params }: Props) {
   const event = await getEventById(eventId);
   if (!event) {
     return (
-      <main className="mx-auto max-w-5xl px-6 py-8">
+      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
         <h1 className="text-xl font-semibold tracking-tight">Event not found</h1>
         <Link className="mt-4 inline-block underline decoration-zinc-300 hover:decoration-zinc-600" href="/">
           Back
@@ -56,7 +56,7 @@ export default async function EventPage({ params }: Props) {
   }
 
   return (
-    <main className="mx-auto max-w-5xl px-6 py-8">
+    <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
       <div className="text-sm text-zinc-600">
         <Link className="underline decoration-zinc-300 hover:decoration-zinc-600" href="/">
           Events
@@ -87,7 +87,7 @@ export default async function EventPage({ params }: Props) {
                       <tr className="bg-zinc-50 text-left text-zinc-600">
                         <th className="border-b border-zinc-200 p-2">Bookmaker</th>
                         <th className="border-b border-zinc-200 p-2">Outcome</th>
-                        <th className="border-b border-zinc-200 p-2">Line</th>
+                        <th className="hidden border-b border-zinc-200 p-2 sm:table-cell">Line</th>
                         <th className="border-b border-zinc-200 p-2">Price</th>
                       </tr>
                     </thead>
@@ -103,7 +103,7 @@ export default async function EventPage({ params }: Props) {
                             <td className="border-b border-zinc-100 p-2 text-zinc-800">
                               {r.outcome_name ?? r.outcome_key}
                             </td>
-                            <td className="border-b border-zinc-100 p-2 text-zinc-700">{r.line ?? "—"}</td>
+                            <td className="hidden border-b border-zinc-100 p-2 text-zinc-700 sm:table-cell">{r.line ?? "—"}</td>
                             <td className="border-b border-zinc-100 p-2 text-zinc-800">{r.price}</td>
                           </tr>
                         ))}
@@ -138,8 +138,8 @@ export default async function EventPage({ params }: Props) {
                 <tr className="bg-zinc-50 text-left text-zinc-600">
                   <th className="border-b border-zinc-200 p-2">Friend</th>
                   <th className="border-b border-zinc-200 p-2">Selection</th>
-                  <th className="border-b border-zinc-200 p-2">Stake</th>
-                  <th className="border-b border-zinc-200 p-2">Settlement</th>
+                  <th className="hidden border-b border-zinc-200 p-2 sm:table-cell">Stake</th>
+                  <th className="hidden border-b border-zinc-200 p-2 sm:table-cell">Settlement</th>
                 </tr>
               </thead>
               <tbody>
@@ -149,9 +149,12 @@ export default async function EventPage({ params }: Props) {
                     <td className="border-b border-zinc-100 p-2 text-zinc-800">
                       {b.market_key} • {b.outcome_name ?? b.outcome_key}
                       {b.line === null ? "" : ` (${b.line})`} @ {b.odds_price_used}
+                      <div className="mt-1 text-xs text-zinc-500 sm:hidden">
+                        Stake: {b.stake} • {b.settlement ?? "—"}
+                      </div>
                     </td>
-                    <td className="border-b border-zinc-100 p-2 text-zinc-700">{b.stake}</td>
-                    <td className="border-b border-zinc-100 p-2 text-zinc-700">{b.settlement ?? "—"}</td>
+                    <td className="hidden border-b border-zinc-100 p-2 text-zinc-700 sm:table-cell">{b.stake}</td>
+                    <td className="hidden border-b border-zinc-100 p-2 text-zinc-700 sm:table-cell">{b.settlement ?? "—"}</td>
                   </tr>
                 ))}
               </tbody>
