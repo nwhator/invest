@@ -2,8 +2,28 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Bet 2026",
-  description: "Bet 2026",
+  metadataBase: new URL("http://localhost:3000"),
+  title: {
+    default: "Bet 2026",
+    template: "%s · Bet 2026",
+  },
+  description: "Track upcoming sports events, compare odds snapshots, and view suggestion probabilities.",
+  applicationName: "Bet 2026",
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    type: "website",
+    title: "Bet 2026",
+    description: "Track upcoming sports events, compare odds snapshots, and view suggestion probabilities.",
+    url: "/",
+    siteName: "Bet 2026",
+  },
+  twitter: {
+    card: "summary",
+    title: "Bet 2026",
+    description: "Track upcoming sports events, compare odds snapshots, and view suggestion probabilities.",
+  },
 };
 
 export default function RootLayout({
@@ -13,7 +33,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-linear-to-b from-zinc-50 via-white to-zinc-100 text-zinc-900 antialiased">
+      <body className="min-h-screen bg-linear-to-b from-indigo-100 via-zinc-50 to-rose-100 text-zinc-900 antialiased">
         <div className="sticky top-0 z-10 border-b border-zinc-200/70 bg-white/80 backdrop-blur supports-backdrop-filter:bg-white/60">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
             <div className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">

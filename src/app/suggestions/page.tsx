@@ -1,7 +1,13 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { getDailySuggestions } from "@/lib/data/suggestions";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Suggestions",
+  description: "Suggestions for events in the next 24 hours based on the latest odds snapshots.",
+};
 
 function pct(x: number) {
   return `${(x * 100).toFixed(1)}%`;
@@ -55,10 +61,10 @@ export default async function SuggestionsPage({ searchParams }: Props) {
         The table is sorted for rollover-style play (smaller odds first).
       </p>
 
-      <div className="mt-6 overflow-x-auto rounded-xl border border-zinc-200/80 bg-white shadow-sm">
+      <div className="mt-6 overflow-x-auto rounded-xl border border-zinc-200/80 bg-white/75 shadow-sm backdrop-blur">
         <table className="min-w-full border-collapse text-sm">
           <thead>
-            <tr className="bg-zinc-50 text-left text-zinc-600">
+            <tr className="bg-indigo-50/60 text-left text-zinc-700">
               <th className="border-b border-zinc-200 p-2 sm:p-3">Time</th>
               <th className="hidden border-b border-zinc-200 p-2 sm:table-cell sm:p-3">Sport</th>
               <th className="border-b border-zinc-200 p-2 sm:p-3">Event</th>
@@ -80,13 +86,19 @@ export default async function SuggestionsPage({ searchParams }: Props) {
               suggestions.map((s) => (
                 <tr key={`${s.eventId}|${s.marketKey}|${s.outcomeKey}|${s.line ?? ""}`} className="hover:bg-zinc-50">
                   <td className="border-b border-zinc-100 p-2 sm:p-3 whitespace-nowrap">{formatUtc(s.commenceTimeUtc)}</td>
-                  <td className="hidden border-b border-zinc-100 p-2 sm:table-cell sm:p-3 font-mono text-xs text-zinc-700">{s.sportKey}</td>
+                  <td className="hidden border-b border-zinc-100 p-2 sm:table-cell sm:p-3">
+                    <span className="inline-flex items-center rounded-full bg-indigo-50 px-2 py-1 font-mono text-xs text-indigo-700 ring-1 ring-inset ring-indigo-100">
+                      {s.sportKey}
+                    </span>
+                  </td>
                   <td className="border-b border-zinc-100 p-2 sm:p-3">
                     <Link className="font-medium text-indigo-700 underline decoration-indigo-200 hover:text-indigo-800 hover:decoration-indigo-400" href={`/events/${s.eventId}`}>
                       {s.homeName} vs {s.awayName}
                     </Link>
                     <div className="mt-1 text-xs text-zinc-500 sm:hidden">
-                      <span className="font-mono">{s.sportKey}</span>
+                      <span className="inline-flex items-center rounded-full bg-indigo-50 px-2 py-0.5 font-mono text-[11px] text-indigo-700 ring-1 ring-inset ring-indigo-100">
+                        {s.sportKey}
+                      </span>
                     </div>
                   </td>
                   <td className="hidden border-b border-zinc-100 p-2 md:table-cell sm:p-3 text-zinc-700">
@@ -134,8 +146,8 @@ export default async function SuggestionsPage({ searchParams }: Props) {
         </div>
       </div>
 
-      <div className="mt-6 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
-        <div className="text-sm font-medium">Important</div>
+      <div className="mt-6 rounded-xl border border-rose-200/80 bg-rose-50/70 p-4 shadow-sm">
+        <div className="text-sm font-medium text-rose-900">Important</div>
         <p className="mt-1 text-sm text-zinc-600">
           This site does not place bets. It only generates suggestions. There is no guarantee of profit.
         </p>

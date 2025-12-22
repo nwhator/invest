@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { getEventById } from "@/lib/data/events";
 import { getLatestOddsForEvent } from "@/lib/data/odds";
 import { listBetsForEvent } from "@/lib/data/bets";
@@ -9,6 +10,22 @@ export const dynamic = "force-dynamic";
 type Props = {
   params: Promise<{ eventId: string }>;
 };
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { eventId } = await params;
+  const event = await getEventById(eventId);
+  if (!event) {
+    return {
+      title: "Event not found",
+      description: "This event could not be found.",
+    };
+  }
+
+  return {
+    title: `${event.home_name} vs ${event.away_name}`,
+    description: `Odds snapshot and picks for ${event.sport_key}.`,
+  };
+}
 
 function formatUtc(iso: string) {
   return new Date(iso).toLocaleString(undefined, { timeZoneName: "short" });
@@ -70,7 +87,7 @@ export default async function EventPage({ params }: Props) {
         {event.sport_key} • {formatUtc(event.commence_time_utc)}
       </div>
 
-      <div className="mt-6 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
+      <div className="mt-6 rounded-xl border border-zinc-200/80 bg-white/75 p-5 shadow-sm backdrop-blur">
         <div className="text-sm font-medium">Latest odds snapshot (lowest price per outcome)</div>
         <div className="mt-1 text-xs text-zinc-500">
           {latestOdds ? `Snapshot: ${formatUtc(latestOdds.snapshotTimeUtc)}` : "No odds yet."}
@@ -84,7 +101,7 @@ export default async function EventPage({ params }: Props) {
                 <div className="mt-2 overflow-x-auto rounded-lg border border-zinc-200">
                   <table className="min-w-full border-collapse text-sm">
                     <thead>
-                      <tr className="bg-zinc-50 text-left text-zinc-600">
+                      <tr className="bg-indigo-50/60 text-left text-zinc-700">
                         <th className="border-b border-zinc-200 p-2">Bookmaker</th>
                         <th className="border-b border-zinc-200 p-2">Outcome</th>
                         <th className="hidden border-b border-zinc-200 p-2 sm:table-cell">Line</th>
@@ -116,7 +133,7 @@ export default async function EventPage({ params }: Props) {
         )}
       </div>
 
-      <div className="mt-6 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
+      <div className="mt-6 rounded-xl border border-zinc-200/80 bg-white/75 p-5 shadow-sm backdrop-blur">
         <div className="text-sm font-medium">Place a friend pick</div>
         <p className="mt-1 text-sm text-zinc-600">
           Saves a pick into the <span className="font-mono">bets</span> table (no auth yet).
@@ -127,7 +144,7 @@ export default async function EventPage({ params }: Props) {
         </div>
       </div>
 
-      <div className="mt-6 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm">
+      <div className="mt-6 rounded-xl border border-zinc-200/80 bg-white/75 p-5 shadow-sm backdrop-blur">
         <div className="text-sm font-medium">Recent picks</div>
         {recentBets.length === 0 ? (
           <p className="mt-2 text-sm text-zinc-600">No picks yet.</p>
@@ -135,7 +152,7 @@ export default async function EventPage({ params }: Props) {
           <div className="mt-3 overflow-x-auto rounded-lg border border-zinc-200">
             <table className="min-w-full border-collapse text-sm">
               <thead>
-                <tr className="bg-zinc-50 text-left text-zinc-600">
+                <tr className="bg-indigo-50/60 text-left text-zinc-700">
                   <th className="border-b border-zinc-200 p-2">Friend</th>
                   <th className="border-b border-zinc-200 p-2">Selection</th>
                   <th className="hidden border-b border-zinc-200 p-2 sm:table-cell">Stake</th>
