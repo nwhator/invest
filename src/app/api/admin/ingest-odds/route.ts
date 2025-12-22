@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminSecret } from "@/lib/envServer";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { expandSportKeys, fetchOddsForSport, oddsApiConfig } from "@/lib/providers/theOddsApi";
+import { fetchOddsForSport, oddsApiConfig, resolveSportKeys } from "@/lib/providers/theOddsApi";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -62,9 +62,12 @@ async function ingestOdds() {
   let upsertedEvents = 0;
   let insertedSnapshots = 0;
 
-  const expandedSportKeys = await expandSportKeys(cfg.sportKeys);
+  // Tennis-only: resolve keys using the official /v4/sports list and skip invalid ones.
+  // Recommended env: ODDS_SPORT_KEYS=tennis
+  const { keys: resolvedSportKeys, skipped } = await resolveSportKeys(cfg.sportKeys.length ? cfg.sportKeys : ["tennis"]);
+  const tennisOnly = resolvedSportKeys.filter((k) => k.toLowerCase().startsWith("tennis_"));
 
-  for (const sportKey of expandedSportKeys) {
+  for (const sportKey of tennisOnly) {
     let events;
     try {
       events = await fetchOddsForSport(sportKey);
@@ -137,14 +140,14 @@ async function ingestOdds() {
     }
   }
 
-  return { upsertedEvents, insertedSnapshots };
+  return { upsertedEvents, insertedSnapshots, usedSportKeys: tennisOnly, skippedSportKeys: skipped };
 }
 
 export async function GET(req: NextRequest) {
   try {
     assertAdmin(req);
-    const { upsertedEvents, insertedSnapshots } = await ingestOdds();
-    return NextResponse.json({ ok: true, upsertedEvents, insertedSnapshots });
+    const { upsertedEvents, insertedSnapshots, usedSportKeys, skippedSportKeys } = await ingestOdds();
+    return NextResponse.json({ ok: true, upsertedEvents, insertedSnapshots, usedSportKeys, skippedSportKeys });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json({ ok: false, error: message }, { status: 500 });
@@ -154,8 +157,8 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     assertAdmin(req);
-    const { upsertedEvents, insertedSnapshots } = await ingestOdds();
-    return NextResponse.json({ ok: true, upsertedEvents, insertedSnapshots });
+    const { upsertedEvents, insertedSnapshots, usedSportKeys, skippedSportKeys } = await ingestOdds();
+    return NextResponse.json({ ok: true, upsertedEvents, insertedSnapshots, usedSportKeys, skippedSportKeys });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json({ ok: false, error: message }, { status: 500 });

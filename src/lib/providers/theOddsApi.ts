@@ -107,3 +107,24 @@ export async function expandSportKeys(inputKeys: string[]): Promise<string[]> {
   // Keep any explicitly provided keys AND all active tennis keys.
   return Array.from(new Set([...withoutAlias, ...tennisKeys]));
 }
+
+export async function resolveSportKeys(inputKeys: string[]): Promise<{ keys: string[]; skipped: string[] }> {
+  const expanded = await expandSportKeys(inputKeys);
+  const sports = await fetchSports(true);
+  const valid = new Set(sports.map((s) => s.key));
+
+  const keys: string[] = [];
+  const skipped: string[] = [];
+
+  for (const k of expanded) {
+    const key = k.trim();
+    if (!key) continue;
+    // Aliases should already be stripped by expandSportKeys, but keep this defensive.
+    const lower = key.toLowerCase();
+    if (lower === "tennis" || lower === "tennis_all") continue;
+    if (valid.has(key)) keys.push(key);
+    else skipped.push(key);
+  }
+
+  return { keys: Array.from(new Set(keys)), skipped: Array.from(new Set(skipped)) };
+}
