@@ -16,8 +16,13 @@ function pct(x: number) {
 function evTone(ev: number): { cls: string; label: string } {
   if (!Number.isFinite(ev)) return { cls: "text-zinc-700", label: "—" };
   if (ev > 0) return { cls: "text-emerald-700", label: `+${pct(ev)}` };
-  if (ev < 0) return { cls: "text-rose-700", label: pct(ev) };
+  if (ev < 0) return { cls: "text-zinc-700", label: pct(ev) };
   return { cls: "text-zinc-700", label: pct(ev) };
+}
+
+function avg(values: number[]): number {
+  if (!values.length) return NaN;
+  return values.reduce((a, b) => a + b, 0) / values.length;
 }
 
 function formatUtc(iso: string) {
@@ -44,6 +49,9 @@ export default async function SuggestionsPage({ searchParams }: Props) {
   const hasPrev = page > 1;
   const hasNext = page < totalPages;
 
+  const avgEv = avg(suggestions.map((s) => s.ev).filter((x) => Number.isFinite(x)));
+  const evLabel = Number.isFinite(avgEv) ? evTone(avgEv).label : "—";
+
   return (
     <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
       <div className="flex items-center justify-between">
@@ -61,10 +69,21 @@ export default async function SuggestionsPage({ searchParams }: Props) {
         The table is sorted for rollover-style play (smaller odds first).
       </p>
 
-      <div className="mt-6 overflow-x-auto rounded-xl border border-zinc-200/80 bg-white/75 shadow-sm backdrop-blur">
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="rounded-xl border border-zinc-200/80 bg-white/70 p-4 shadow-sm backdrop-blur">
+          <div className="text-xs font-medium uppercase tracking-wide text-zinc-500">Suggestions (this page)</div>
+          <div className="mt-1 text-2xl font-semibold text-zinc-900">{suggestions.length}</div>
+        </div>
+        <div className="rounded-xl border border-zinc-200/80 bg-white/70 p-4 shadow-sm backdrop-blur">
+          <div className="text-xs font-medium uppercase tracking-wide text-zinc-500">Avg EV (this page)</div>
+          <div className={`mt-1 text-2xl font-semibold ${evTone(avgEv).cls}`}>{evLabel}</div>
+        </div>
+      </div>
+
+      <div className="mt-6 overflow-x-auto rounded-xl border border-zinc-200/80 bg-white/70 shadow-sm backdrop-blur">
         <table className="min-w-full border-collapse text-sm">
           <thead>
-            <tr className="bg-indigo-50/60 text-left text-zinc-700">
+            <tr className="bg-emerald-50/60 text-left text-zinc-700">
               <th className="border-b border-zinc-200 p-2 sm:p-3">Time</th>
               <th className="hidden border-b border-zinc-200 p-2 sm:table-cell sm:p-3">Sport</th>
               <th className="border-b border-zinc-200 p-2 sm:p-3">Event</th>
@@ -146,8 +165,8 @@ export default async function SuggestionsPage({ searchParams }: Props) {
         </div>
       </div>
 
-      <div className="mt-6 rounded-xl border border-rose-200/80 bg-rose-50/70 p-4 shadow-sm">
-        <div className="text-sm font-medium text-rose-900">Important</div>
+      <div className="mt-6 rounded-xl border border-indigo-200/80 bg-indigo-50/70 p-4 shadow-sm">
+        <div className="text-sm font-medium text-indigo-900">Important</div>
         <p className="mt-1 text-sm text-zinc-600">
           This site does not place bets. It only generates suggestions. There is no guarantee of profit.
         </p>

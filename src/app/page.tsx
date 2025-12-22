@@ -42,29 +42,29 @@ export default async function Home({ searchParams }: Props) {
 
       <div className="mt-4 flex flex-wrap gap-2 text-sm">
         <Link
-          className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-1.5 font-medium text-white shadow-sm hover:bg-indigo-500"
+          className="inline-flex items-center rounded-md bg-emerald-600 px-3 py-1.5 font-medium text-white shadow-sm hover:bg-emerald-500"
           href="/suggestions"
         >
           Suggestions
         </Link>
         <Link
-          className="inline-flex items-center rounded-md border border-rose-200/80 bg-rose-50/70 px-3 py-1.5 text-rose-900 shadow-sm hover:border-rose-300 hover:bg-rose-50"
+          className="inline-flex items-center rounded-md border border-indigo-200/80 bg-indigo-50/70 px-3 py-1.5 text-indigo-900 shadow-sm hover:border-indigo-300 hover:bg-indigo-50"
           href="/admin/ingest-odds"
         >
           Admin: ingest odds
         </Link>
         <Link
-          className="inline-flex items-center rounded-md border border-rose-200/80 bg-rose-50/70 px-3 py-1.5 text-rose-900 shadow-sm hover:border-rose-300 hover:bg-rose-50"
+          className="inline-flex items-center rounded-md border border-indigo-200/80 bg-indigo-50/70 px-3 py-1.5 text-indigo-900 shadow-sm hover:border-indigo-300 hover:bg-indigo-50"
           href="/admin/results"
         >
           Admin: results
         </Link>
       </div>
 
-      <div className="mt-6 overflow-x-auto rounded-xl border border-zinc-200/80 bg-white/75 shadow-sm backdrop-blur">
+      <div className="mt-6 overflow-x-auto rounded-xl border border-zinc-200/80 bg-white/70 shadow-sm backdrop-blur">
         <table className="min-w-full border-collapse text-sm">
           <thead>
-            <tr className="bg-indigo-50/60 text-left text-zinc-700">
+            <tr className="bg-emerald-50/60 text-left text-zinc-700">
               <th className="border-b border-zinc-200 p-2 sm:p-3">Time</th>
               <th className="hidden border-b border-zinc-200 p-2 sm:table-cell sm:p-3">Sport</th>
               <th className="border-b border-zinc-200 p-2 sm:p-3">Match</th>

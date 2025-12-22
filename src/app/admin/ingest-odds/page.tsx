@@ -52,7 +52,7 @@ export default function AdminIngestOddsPage() {
         </label>
 
         <button
-          className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-500"
+          className="rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-emerald-500"
           type="submit"
         >
           Ingest odds now
