@@ -18,6 +18,10 @@ export default function AdminIngestOddsPage() {
         Manually fetches the latest odds from The Odds API and writes events + snapshots to Supabase.
       </p>
 
+      <p className="mt-2 text-sm text-zinc-600">
+        Need sport keys? Use the admin endpoint: <span className="font-mono">/api/admin/odds-sports</span>
+      </p>
+
       <form
         className="mt-6 grid gap-3 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm"
         onSubmit={(e) => {

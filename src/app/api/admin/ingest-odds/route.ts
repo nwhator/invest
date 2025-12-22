@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdminSecret } from "@/lib/envServer";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { fetchOddsForSport, oddsApiConfig } from "@/lib/providers/theOddsApi";
+import { expandSportKeys, fetchOddsForSport, oddsApiConfig } from "@/lib/providers/theOddsApi";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -62,8 +62,23 @@ async function ingestOdds() {
   let upsertedEvents = 0;
   let insertedSnapshots = 0;
 
-  for (const sportKey of cfg.sportKeys) {
-    const events = await fetchOddsForSport(sportKey);
+  const expandedSportKeys = await expandSportKeys(cfg.sportKeys);
+
+  for (const sportKey of expandedSportKeys) {
+    let events;
+    try {
+      events = await fetchOddsForSport(sportKey);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      // Common gotcha: user set a non-existent key like tennis_atp.
+      // The Odds API requires exact keys from /v4/sports.
+      if (msg.includes("UNKNOWN_SPORT")) {
+        throw new Error(
+          `${msg}\nHint: call /api/admin/odds-sports?secret=YOUR_ADMIN_SECRET to see valid keys, then set ODDS_SPORT_KEYS accordingly (or just set ODDS_SPORT_KEYS=tennis).`
+        );
+      }
+      throw e;
+    }
 
     for (const ev of events) {
       const { data: upserted, error: upsertErr } = await sb

@@ -44,6 +44,12 @@ Manual trigger options (requires `ADMIN_SECRET`):
 - UI: `/admin/ingest-odds`
 - API: `POST http://localhost:3000/api/admin/ingest-odds?secret=YOUR_ADMIN_SECRET`
 
+To see valid sport keys from your Odds API plan:
+
+- API: `GET http://localhost:3000/api/admin/odds-sports?secret=YOUR_ADMIN_SECRET`
+
+Tip: set `ODDS_SPORT_KEYS=tennis` to auto-expand to all active tennis keys.
+
 ## Use the UI
 
 - `/` lists upcoming events
