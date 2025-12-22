@@ -50,14 +50,22 @@ export function oddsApiConfig() {
   };
 }
 
-export async function fetchOddsForSport(sportKey: OddsApiSportKey): Promise<OddsApiEvent[]> {
+export async function fetchOddsForSport(
+  sportKey: OddsApiSportKey,
+  overrides?: {
+    regions?: string;
+    markets?: string;
+    oddsFormat?: string;
+    dateFormat?: string;
+  }
+): Promise<OddsApiEvent[]> {
   const cfg = oddsApiConfig();
 
   const url = new URL(`https://api.the-odds-api.com/v4/sports/${sportKey}/odds/`);
-  url.searchParams.set("regions", cfg.regions);
-  url.searchParams.set("markets", cfg.markets);
-  url.searchParams.set("oddsFormat", cfg.oddsFormat);
-  url.searchParams.set("dateFormat", cfg.dateFormat);
+  url.searchParams.set("regions", overrides?.regions ?? cfg.regions);
+  url.searchParams.set("markets", overrides?.markets ?? cfg.markets);
+  url.searchParams.set("oddsFormat", overrides?.oddsFormat ?? cfg.oddsFormat);
+  url.searchParams.set("dateFormat", overrides?.dateFormat ?? cfg.dateFormat);
   url.searchParams.set("apiKey", cfg.apiKey);
 
   const res = await fetch(url.toString(), { next: { revalidate: 0 } });

@@ -67,6 +67,9 @@ async function ingestOdds() {
     eventsFetched: number;
     eventsWithBookmakers: number;
     snapshotsPrepared: number;
+    attempt: "primary" | "fallback";
+    regions: string;
+    markets: string;
   }> = [];
 
   // Tennis-only: resolve keys using the official /v4/sports list and skip invalid ones.
@@ -84,89 +87,103 @@ async function ingestOdds() {
   }
 
   for (const sportKey of tennisOnly) {
-    let events;
-    try {
-      events = await fetchOddsForSport(sportKey);
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      // Common gotcha: user set a non-existent key like tennis_atp.
-      // The Odds API requires exact keys from /v4/sports.
-      if (msg.includes("UNKNOWN_SPORT")) {
-        throw new Error(
-          `${msg}\nHint: call /api/admin/odds-sports?secret=YOUR_ADMIN_SECRET to see valid keys, then set ODDS_SPORT_KEYS accordingly (or just set ODDS_SPORT_KEYS=tennis).`
-        );
-      }
-      throw e;
-    }
-
-    let eventsWithBookmakers = 0;
-    let snapshotsPrepared = 0;
-
-    for (const ev of events) {
-      const { data: upserted, error: upsertErr } = await sb
-        .from("events")
-        .upsert(
-          {
-            sport_key: ev.sport_key,
-            league_key: ev.sport_key,
-            commence_time_utc: ev.commence_time,
-            home_name: ev.home_team,
-            away_name: ev.away_team,
-            odds_provider: "the-odds-api",
-            odds_provider_event_id: ev.id,
-            status: "scheduled",
-          },
-          {
-            onConflict: "odds_provider,odds_provider_event_id",
-          }
-        )
-        .select("id")
-        .single();
-
-      if (upsertErr || !upserted) {
-        throw new Error(`Failed to upsert event: ${upsertErr?.message ?? "unknown"}`);
+    const runAttempt = async (attempt: "primary" | "fallback", regions: string, markets: string) => {
+      let events;
+      try {
+        events = await fetchOddsForSport(sportKey, { regions, markets });
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        if (msg.includes("UNKNOWN_SPORT")) {
+          throw new Error(
+            `${msg}\nHint: call /api/admin/odds-sports?secret=YOUR_ADMIN_SECRET to see valid keys, then set ODDS_SPORT_KEYS accordingly (or just set ODDS_SPORT_KEYS=tennis).`
+          );
+        }
+        throw e;
       }
 
-      upsertedEvents += 1;
+      let eventsWithBookmakers = 0;
+      let snapshotsPrepared = 0;
 
-      const snapshots: SnapshotInsert[] = [];
-      for (const bookmaker of ev.bookmakers ?? []) {
-        for (const market of bookmaker.markets ?? []) {
-          for (const out of market.outcomes ?? []) {
-            snapshots.push({
-              event_id: upserted.id,
-              provider: "the-odds-api",
-              bookmaker: bookmaker.key,
-              market_key: market.key,
-              outcome_key: outcomeKey(market.key, out.name, { homeName: ev.home_team, awayName: ev.away_team }),
-              outcome_name: out.name,
-              line: out.point ?? null,
-              price: out.price,
-              snapshot_time_utc: snapshotTime,
-              raw: { sportKey, eventId: ev.id },
-            });
+      for (const ev of events) {
+        const { data: upserted, error: upsertErr } = await sb
+          .from("events")
+          .upsert(
+            {
+              sport_key: ev.sport_key,
+              league_key: ev.sport_key,
+              commence_time_utc: ev.commence_time,
+              home_name: ev.home_team,
+              away_name: ev.away_team,
+              odds_provider: "the-odds-api",
+              odds_provider_event_id: ev.id,
+              status: "scheduled",
+            },
+            {
+              onConflict: "odds_provider,odds_provider_event_id",
+            }
+          )
+          .select("id")
+          .single();
+
+        if (upsertErr || !upserted) {
+          throw new Error(`Failed to upsert event: ${upsertErr?.message ?? "unknown"}`);
+        }
+
+        upsertedEvents += 1;
+
+        const snapshots: SnapshotInsert[] = [];
+        for (const bookmaker of ev.bookmakers ?? []) {
+          for (const market of bookmaker.markets ?? []) {
+            for (const out of market.outcomes ?? []) {
+              snapshots.push({
+                event_id: upserted.id,
+                provider: "the-odds-api",
+                bookmaker: bookmaker.key,
+                market_key: market.key,
+                outcome_key: outcomeKey(market.key, out.name, { homeName: ev.home_team, awayName: ev.away_team }),
+                outcome_name: out.name,
+                line: out.point ?? null,
+                price: out.price,
+                snapshot_time_utc: snapshotTime,
+                raw: { sportKey, eventId: ev.id },
+              });
+            }
           }
+        }
+
+        if ((ev.bookmakers ?? []).length > 0) eventsWithBookmakers += 1;
+        snapshotsPrepared += snapshots.length;
+
+        if (snapshots.length) {
+          const { error: insertErr } = await sb.from("odds_snapshots").insert(snapshots);
+          if (insertErr) {
+            throw new Error(`Failed to insert snapshots: ${insertErr.message}`);
+          }
+          insertedSnapshots += snapshots.length;
         }
       }
 
-      if ((ev.bookmakers ?? []).length > 0) eventsWithBookmakers += 1;
-      snapshotsPrepared += snapshots.length;
+      debugBySport.push({
+        sportKey,
+        attempt,
+        regions,
+        markets,
+        eventsFetched: events.length,
+        eventsWithBookmakers,
+        snapshotsPrepared,
+      });
 
-      if (snapshots.length) {
-        const { error: insertErr } = await sb.from("odds_snapshots").insert(snapshots);
-        if (insertErr) {
-          throw new Error(`Failed to insert snapshots: ${insertErr.message}`);
-        }
-        insertedSnapshots += snapshots.length;
-      }
+      return { eventsFetched: events.length, eventsWithBookmakers, snapshotsPrepared };
+    };
+
+    // Primary attempt: your configured regions/markets.
+    const primary = await runAttempt("primary", cfg.regions, cfg.markets);
+
+    // If the API returns events but no odds (common for tennis in US books / non-supported markets), retry.
+    if (primary.eventsFetched > 0 && primary.snapshotsPrepared === 0) {
+      // Fallback attempt: broader non-US regions + h2h-only.
+      await runAttempt("fallback", "eu,uk,au", "h2h");
     }
-
-    debugBySport.push({
-      sportKey,
-      eventsFetched: events.length,
-      eventsWithBookmakers,
-      snapshotsPrepared,
-    });
   }
 
   return {
