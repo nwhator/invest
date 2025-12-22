@@ -29,6 +29,9 @@ create unique index if not exists events_provider_event_id_uniq
 create index if not exists events_commence_time_idx
   on public.events (commence_time_utc);
 
+create index if not exists events_sport_key_idx
+  on public.events (sport_key);
+
 create table if not exists public.odds_snapshots (
   id uuid primary key default gen_random_uuid(),
 
@@ -54,6 +57,9 @@ create table if not exists public.odds_snapshots (
 create index if not exists odds_snapshots_event_time_idx
   on public.odds_snapshots (event_id, snapshot_time_utc desc);
 
+create index if not exists odds_snapshots_snapshot_time_idx
+  on public.odds_snapshots (snapshot_time_utc desc);
+
 create index if not exists odds_snapshots_market_idx
   on public.odds_snapshots (market_key);
 
@@ -68,6 +74,9 @@ create table if not exists public.results (
 
   created_at timestamptz not null default now()
 );
+
+create index if not exists results_final_time_idx
+  on public.results (final_time_utc);
 
 create table if not exists public.predictions (
   id uuid primary key default gen_random_uuid(),

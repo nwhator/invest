@@ -26,8 +26,9 @@ export default async function SuggestionsPage() {
 
       <h1 className="mt-2 text-2xl font-semibold tracking-tight">Suggestions (next 24h)</h1>
       <p className="mt-2 text-sm text-zinc-600">
-        MVP model: derives a fair probability from the latest odds snapshot (average implied probs across books, then
-        normalized to remove vig). Suggestions prefer tennis first and smaller odds (lowest price) for rollover-style play.
+        MVP model: derives a fair probability from the latest odds snapshot (median implied probs across books, then normalized
+        to remove vig). It also filters out outcomes with too few books and prefers higher-consensus prices (lower disagreement).
+        Suggestions prefer tennis first and smaller odds (lowest price) for rollover-style play.
       </p>
 
       <div className="mt-6 overflow-x-auto rounded-xl border border-zinc-200 bg-white shadow-sm">

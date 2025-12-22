@@ -17,6 +17,7 @@ export async function listUpcomingEvents(limit = 50): Promise<EventRow[]> {
   const { data, error } = await sb
     .from("events")
     .select("id,sport_key,league_key,commence_time_utc,home_name,away_name,status")
+    .like("sport_key", "tennis_%")
     .gte("commence_time_utc", nowIso)
     .order("commence_time_utc", { ascending: true })
     .limit(limit);

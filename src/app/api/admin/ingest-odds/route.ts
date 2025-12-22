@@ -34,8 +34,16 @@ function assertAdmin(req: NextRequest) {
   throw new Error("Unauthorized");
 }
 
-function outcomeKey(marketKey: string, outcomeName: string): string {
+function outcomeKey(marketKey: string, outcomeName: string, opts?: { homeName?: string; awayName?: string }): string {
   const normalized = outcomeName.trim().toLowerCase();
+
+  if ((marketKey === "h2h" || marketKey === "spreads") && opts?.homeName && opts?.awayName) {
+    const home = opts.homeName.trim().toLowerCase();
+    const away = opts.awayName.trim().toLowerCase();
+    if (normalized === home) return "home";
+    if (normalized === away) return "away";
+    if (normalized === "draw") return "draw";
+  }
 
   if (marketKey === "totals") {
     if (normalized === "over") return "over";
@@ -93,7 +101,7 @@ async function ingestOdds() {
               provider: "the-odds-api",
               bookmaker: bookmaker.key,
               market_key: market.key,
-              outcome_key: outcomeKey(market.key, out.name),
+              outcome_key: outcomeKey(market.key, out.name, { homeName: ev.home_team, awayName: ev.away_team }),
               outcome_name: out.name,
               line: out.point ?? null,
               price: out.price,
