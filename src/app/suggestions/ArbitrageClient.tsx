@@ -1,7 +1,6 @@
 "use client";
 
 import { Fragment, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { stakePlan } from "@/lib/arbitrage/math";
 import type { ArbOpportunity } from "@/lib/arbitrage/types";
 
@@ -150,16 +149,17 @@ export default function ArbitrageClient(props: {
                         </span>
                       </td>
                       <td className="border-b border-zinc-100 p-2 sm:p-3">
-                        <Link
-                          className="font-medium text-indigo-700 underline decoration-indigo-200 hover:text-indigo-800 hover:decoration-indigo-400"
-                          href={`/events/${o.eventId}`}
-                        >
+                        <div className="font-medium text-indigo-900">
                           {o.outcomeLabels.A} vs {o.outcomeLabels.B}
-                        </Link>
+                        </div>
                         <div className="mt-1 text-xs text-zinc-500">
-                          {o.marketKey === "h2h"
-                            ? "h2h"
-                            : `spreads: ${fmtLine(o.outcomeLines?.A)} / ${fmtLine(o.outcomeLines?.B)}`}
+                          {o.marketKey === "h2h" ? (
+                            `h2h: ${o.betLabels.A} / ${o.betLabels.B}`
+                          ) : o.marketKey === "spreads" ? (
+                            `spreads: ${o.betLabels.A} ${fmtLine(o.outcomeLines?.A)} / ${o.betLabels.B} ${fmtLine(o.outcomeLines?.B)}`
+                          ) : (
+                            `totals: ${o.betLabels.A} ${fmtLine(o.outcomeLines?.A)} / ${o.betLabels.B} ${fmtLine(o.outcomeLines?.B)}`
+                          )}
                         </div>
                         <div className="mt-1 text-xs text-zinc-500 sm:hidden">
                           <span className="inline-flex items-center rounded-full bg-indigo-50 px-2 py-0.5 font-mono text-[11px] text-indigo-700 ring-1 ring-inset ring-indigo-100">

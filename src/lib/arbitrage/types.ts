@@ -1,4 +1,4 @@
-export type ArbMarketKey = "h2h" | "spreads";
+export type ArbMarketKey = "h2h" | "spreads" | "totals";
 
 export type ArbBestOdd = { odds: number; bookmaker: string };
 
@@ -9,11 +9,18 @@ export type ArbOpportunity = {
   startTimeUtc: string;
 
   marketKey: ArbMarketKey;
-  // For spreads/handicap, each side has its own point.
-  outcomeLines?: {
-    A: number | null;
-    B: number | null;
+  // Bet-side labels for the arbitrage legs.
+  // - h2h/spreads: home/away
+  // - totals: Over/Under
+  betLabels: {
+    A: string;
+    B: string;
   };
+
+  // Optional bet lines.
+  // - spreads: +/- handicap per team
+  // - totals: total line for Over/Under (A and B will be the same)
+  outcomeLines?: { A: number | null; B: number | null };
 
   bestOdds: {
     A: ArbBestOdd;

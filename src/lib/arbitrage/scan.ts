@@ -50,7 +50,7 @@ export async function scanArbitrage(opts?: {
     .select(
       "event_id,bookmaker,market_key,outcome_key,outcome_name,line,price,snapshot_time_utc,events!inner(sport_key,league_key,commence_time_utc,home_name,away_name)"
     )
-    .in("market_key", ["h2h", "spreads"])
+    .in("market_key", ["h2h", "spreads", "totals"])
     .gte("events.commence_time_utc", now.toISOString())
     .lte("events.commence_time_utc", end.toISOString())
     .order("snapshot_time_utc", { ascending: false })
@@ -138,6 +138,7 @@ export async function scanArbitrage(opts?: {
                 league,
                 startTimeUtc,
                 marketKey: "h2h",
+                betLabels: { A: homeName, B: awayName },
                 bestOdds: { A: bestA, B: bestB },
                 outcomeLabels: { A: homeName, B: awayName },
                 roiPercent: roiPercent({ oddsA, oddsB }),
@@ -217,8 +218,65 @@ export async function scanArbitrage(opts?: {
             league,
             startTimeUtc,
             marketKey: "spreads",
+            betLabels: { A: homeName, B: awayName },
             outcomeLines: { A: cur.lineA ?? null, B: cur.lineB ?? null },
             bestOdds: { A: cur.bestA, B: cur.bestB },
+            outcomeLabels: { A: homeName, B: awayName },
+            roiPercent: roiPercent({ oddsA, oddsB }),
+            impliedSum: 1 / oddsA + 1 / oddsB,
+            lastUpdatedUtc,
+          });
+        }
+      }
+    }
+
+    // --- totals (2-outcome only, match by exact line: Over/Under) ---
+    {
+      const totalsRows = evRows.filter((r) => String(r.market_key) === "totals");
+      if (totalsRows.length) {
+        type BestForTotal = {
+          bestOver: ArbBestOdd | null;
+          bestUnder: ArbBestOdd | null;
+          line: number | null;
+        };
+
+        const byLine = new Map<string, BestForTotal>();
+        for (const r of totalsRows) {
+          const odds = Number(r.price);
+          if (!Number.isFinite(odds) || odds <= 1) continue;
+
+          const ok = String(r.outcome_key);
+          if (ok !== "over" && ok !== "under") continue;
+
+          const lineVal = r.line == null ? NaN : Number(r.line);
+          if (!Number.isFinite(lineVal)) continue;
+
+          const key = String(lineVal);
+          const cur = byLine.get(key) ?? { bestOver: null, bestUnder: null, line: lineVal };
+          if (ok === "over") {
+            if (!cur.bestOver || odds > cur.bestOver.odds) cur.bestOver = { odds, bookmaker: String(r.bookmaker) };
+          } else {
+            if (!cur.bestUnder || odds > cur.bestUnder.odds) cur.bestUnder = { odds, bookmaker: String(r.bookmaker) };
+          }
+          byLine.set(key, cur);
+        }
+
+        for (const cur of byLine.values()) {
+          if (!cur.bestOver || !cur.bestUnder) continue;
+
+          const oddsA = cur.bestOver.odds;
+          const oddsB = cur.bestUnder.odds;
+          if (!isArbitrage({ oddsA, oddsB }, minRoiPercent)) continue;
+
+          opportunities.push({
+            eventId,
+            sport,
+            league,
+            startTimeUtc,
+            marketKey: "totals",
+            betLabels: { A: "Over", B: "Under" },
+            outcomeLines: { A: cur.line ?? null, B: cur.line ?? null },
+            bestOdds: { A: cur.bestOver, B: cur.bestUnder },
             outcomeLabels: { A: homeName, B: awayName },
             roiPercent: roiPercent({ oddsA, oddsB }),
             impliedSum: 1 / oddsA + 1 / oddsB,

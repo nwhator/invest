@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default async function SuggestionsPage() {
   const hoursAhead = 24;
-  const minRoiPercent = 0.3;
+  const minRoiPercent = 0;
   const { opportunities, lastUpdatedUtc } = await scanArbitrage({
     hoursAhead,
     minRoiPercent,
