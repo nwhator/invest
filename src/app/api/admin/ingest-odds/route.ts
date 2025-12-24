@@ -72,8 +72,8 @@ async function ingestOdds() {
     markets: string;
   }> = [];
 
-  // Arbitrage scanner is 2-outcome only, so ingest h2h markets.
-  const markets = "h2h";
+  // Arbitrage scanner is 2-outcome only, so ingest h2h + spreads.
+  const markets = "h2h,spreads";
 
   const { keys: resolvedSportKeys, skipped } = await resolveSportKeys(cfg.sportKeys.length ? cfg.sportKeys : ["upcoming"]);
   const sportKeys = resolvedSportKeys.length ? resolvedSportKeys : ["upcoming"];
@@ -126,7 +126,7 @@ async function ingestOdds() {
         const snapshots: SnapshotInsert[] = [];
         for (const bookmaker of ev.bookmakers ?? []) {
           for (const market of bookmaker.markets ?? []) {
-            if (market.key !== "h2h") continue;
+            if (market.key !== "h2h" && market.key !== "spreads") continue;
             for (const out of market.outcomes ?? []) {
               snapshots.push({
                 event_id: upserted.id,

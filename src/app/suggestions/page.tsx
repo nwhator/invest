@@ -9,11 +9,7 @@ export const metadata: Metadata = {
   description: "Guaranteed arbitrage opportunities from the latest odds snapshots (best odds per outcome across books).",
 };
 
-type Props = {
-  searchParams?: Promise<{ page?: string }>;
-};
-
-export default async function SuggestionsPage({ searchParams }: Props) {
+export default async function SuggestionsPage() {
   const hoursAhead = 24;
   const minRoiPercent = 0.3;
   const { opportunities, lastUpdatedUtc } = await scanArbitrage({

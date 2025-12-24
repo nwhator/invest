@@ -63,6 +63,14 @@ create index if not exists odds_snapshots_snapshot_time_idx
 create index if not exists odds_snapshots_market_idx
   on public.odds_snapshots (market_key);
 
+-- Helpful for spreads/handicap scanning (market + line lookup)
+create index if not exists odds_snapshots_market_line_idx
+  on public.odds_snapshots (market_key, line);
+
+-- Helpful for scanning latest odds for a market per event
+create index if not exists odds_snapshots_event_market_time_idx
+  on public.odds_snapshots (event_id, market_key, snapshot_time_utc desc);
+
 create table if not exists public.results (
   event_id uuid primary key references public.events(id) on delete cascade,
 

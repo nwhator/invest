@@ -42,9 +42,12 @@ type OddsApiEvent = {
 export function oddsApiConfig() {
   return {
     apiKey: requiredEnv("ODDS_API_KEY"),
-    sportKeys: csvEnv("ODDS_SPORT_KEYS", "soccer_epl,americanfootball_nfl"),
-    regions: optionalEnv("ODDS_REGIONS", "us")!,
-    markets: optionalEnv("ODDS_MARKETS", "h2h,spreads,totals")!,
+    // Default to the cross-sport feed so the scanner covers all available sports on your plan.
+    sportKeys: csvEnv("ODDS_SPORT_KEYS", "upcoming"),
+    // Broaden default regions for better bookmaker coverage; override with ODDS_REGIONS if needed.
+    regions: optionalEnv("ODDS_REGIONS", "us,eu,uk,au")!,
+    // Arbitrage scanner supports 2-outcome markets only (h2h + spreads).
+    markets: optionalEnv("ODDS_MARKETS", "h2h,spreads")!,
     oddsFormat: optionalEnv("ODDS_ODDS_FORMAT", "decimal")!,
     dateFormat: optionalEnv("ODDS_DATE_FORMAT", "iso")!,
   };
@@ -96,6 +99,15 @@ export async function fetchSports(all = false): Promise<OddsApiSport[]> {
 
 export async function expandSportKeys(inputKeys: string[]): Promise<string[]> {
   const normalized = inputKeys.map((k) => k.trim()).filter(Boolean);
+
+  // Convenience alias: ODDS_SPORT_KEYS=all means “scan across everything available”.
+  // The Odds API provides this via the special 'upcoming' key.
+  const wantsAll = normalized.some((k) => k.toLowerCase() === "all");
+  if (wantsAll) {
+    const withoutAll = normalized.filter((k) => k.trim().toLowerCase() !== "all");
+    return Array.from(new Set(["upcoming", ...withoutAll]));
+  }
+
   const wantsTennisAlias = normalized.some((k) => k.toLowerCase() === "tennis" || k.toLowerCase() === "tennis_all");
   if (!wantsTennisAlias) return normalized;
 

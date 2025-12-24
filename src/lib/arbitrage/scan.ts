@@ -193,6 +193,20 @@ export async function scanArbitrage(opts?: {
 
         for (const cur of byAbsLine.values()) {
           if (!cur.bestA || !cur.bestB) continue;
+
+          // Spreads arbitrage is only valid when both sides reference the same handicap,
+          // typically as opposite signs (e.g., -3.5 / +3.5).
+          const lineA = cur.lineA;
+          const lineB = cur.lineB;
+          if (!Number.isFinite(lineA ?? NaN) || !Number.isFinite(lineB ?? NaN)) continue;
+          if ((lineA ?? 0) === 0 || (lineB ?? 0) === 0) {
+            // allow 0/0 only if signs are effectively opposite; otherwise skip
+            if (String(lineA) !== String(-Number(lineB))) continue;
+          } else {
+            if ((lineA ?? 0) * (lineB ?? 0) >= 0) continue;
+            if (Math.abs(Math.abs(lineA!) - Math.abs(lineB!)) > 1e-9) continue;
+          }
+
           const oddsA = cur.bestA.odds;
           const oddsB = cur.bestB.odds;
           if (!isArbitrage({ oddsA, oddsB }, minRoiPercent)) continue;
