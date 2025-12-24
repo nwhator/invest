@@ -37,6 +37,10 @@ Arbitrage candidates come directly from RapidAPI sportsbook-api2.
 
 - `/suggestions` shows arbitrage opportunities
 
+## Check RapidAPI connectivity
+
+- `/api/health/rapidapi` returns a quick status + counts (useful for verifying `RAPIDAPI_KEY` and diagnosing 401/429 errors)
+
 ## Notes
 
 - RapidAPI responses are fetched server-side.

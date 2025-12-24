@@ -44,11 +44,13 @@ function roiTone(roi: number) {
 export default function ArbitrageClient(props: {
   initial: ArbOpportunity[];
   initialLastUpdatedUtc: string;
+  initialError?: string | null;
   minRoiPercent: number;
   hoursAhead: number;
 }) {
   const [opportunities, setOpportunities] = useState<ArbOpportunity[]>(props.initial);
   const [lastUpdatedUtc, setLastUpdatedUtc] = useState<string>(props.initialLastUpdatedUtc);
+  const [lastError, setLastError] = useState<string | null>(props.initialError ?? null);
   const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
   const [bankroll, setBankroll] = useState<string>("100");
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -67,8 +69,18 @@ export default function ArbitrageClient(props: {
         limit: "500",
       });
       const res = await fetch(`/api/arbitrage?${qs.toString()}`, { cache: "no-store" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const json = (await res.json()) as { opportunities: ArbOpportunity[]; lastUpdatedUtc: string };
+      const json = (await res.json().catch(() => null)) as
+        | { ok: true; opportunities: ArbOpportunity[]; lastUpdatedUtc: string }
+        | { ok: false; error?: string }
+        | null;
+
+      if (!res.ok || !json || ("ok" in json && json.ok === false)) {
+        const msg = (json && "error" in json && json.error) ? String(json.error) : `HTTP ${res.status}`;
+        setLastError(msg);
+        return;
+      }
+
+      setLastError(null);
       setOpportunities(json.opportunities ?? []);
       setLastUpdatedUtc(json.lastUpdatedUtc ?? new Date().toISOString());
     } finally {
@@ -88,6 +100,16 @@ export default function ArbitrageClient(props: {
 
   return (
     <>
+      {lastError ? (
+        <div className="mt-4 rounded-xl border border-rose-200/80 bg-rose-50/70 p-4 shadow-sm">
+          <div className="text-sm font-medium text-rose-900">Feed error</div>
+          <p className="mt-1 text-sm text-zinc-700 break-words">{lastError}</p>
+          <p className="mt-2 text-xs text-zinc-600">
+            Quick check: open <span className="font-mono">/api/health/rapidapi</span> to verify RapidAPI connectivity.
+          </p>
+        </div>
+      ) : null}
+
       <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
         <div className="rounded-xl border border-zinc-200/80 bg-white/70 p-4 shadow-sm backdrop-blur">
           <div className="text-xs font-medium uppercase tracking-wide text-zinc-500">Opportunities</div>

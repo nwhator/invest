@@ -12,11 +12,21 @@ export const metadata: Metadata = {
 export default async function SuggestionsPage() {
   const hoursAhead = 24;
   const minRoiPercent = 0;
-  const { opportunities, lastUpdatedUtc } = await scanArbitrage({
-    hoursAhead,
-    minRoiPercent,
-    limit: 500,
-  });
+  let opportunities = [] as Awaited<ReturnType<typeof scanArbitrage>>["opportunities"];
+  let lastUpdatedUtc = new Date().toISOString();
+  let initialError: string | null = null;
+
+  try {
+    const res = await scanArbitrage({
+      hoursAhead,
+      minRoiPercent,
+      limit: 500,
+    });
+    opportunities = res.opportunities;
+    lastUpdatedUtc = res.lastUpdatedUtc;
+  } catch (err) {
+    initialError = err instanceof Error ? err.message : "Failed to load feed";
+  }
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
@@ -32,6 +42,7 @@ export default async function SuggestionsPage() {
       <ArbitrageClient
         initial={opportunities}
         initialLastUpdatedUtc={lastUpdatedUtc}
+        initialError={initialError}
         minRoiPercent={minRoiPercent}
         hoursAhead={hoursAhead}
       />
