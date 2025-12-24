@@ -7,7 +7,7 @@ export const metadata: Metadata = {
     default: "Bet 2026",
     template: "%s · Bet 2026",
   },
-  description: "Track upcoming sports events, compare odds snapshots, and view suggestion probabilities.",
+  description: "Scan upcoming sports events and find two-outcome arbitrage opportunities from the latest odds snapshots.",
   applicationName: "Bet 2026",
   alternates: {
     canonical: "/",
@@ -15,14 +15,14 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     title: "Bet 2026",
-    description: "Track upcoming sports events, compare odds snapshots, and view suggestion probabilities.",
+    description: "Scan upcoming sports events and find two-outcome arbitrage opportunities from the latest odds snapshots.",
     url: "/",
     siteName: "Bet 2026",
   },
   twitter: {
     card: "summary",
     title: "Bet 2026",
-    description: "Track upcoming sports events, compare odds snapshots, and view suggestion probabilities.",
+    description: "Scan upcoming sports events and find two-outcome arbitrage opportunities from the latest odds snapshots.",
   },
 };
 
@@ -55,7 +55,7 @@ export default function RootLayout({
                   className="rounded-full border border-zinc-200/80 bg-white/70 px-3 py-1.5 text-zinc-700 shadow-sm backdrop-blur hover:border-emerald-200 hover:bg-emerald-50/60 hover:text-zinc-900"
                   href="/suggestions"
                 >
-                  Suggestions
+                  Arbitrage
                 </a>
                 <a
                   className="rounded-full border border-zinc-200/80 bg-white/70 px-3 py-1.5 text-zinc-700 shadow-sm backdrop-blur hover:border-indigo-200 hover:bg-indigo-50/60 hover:text-zinc-900"
