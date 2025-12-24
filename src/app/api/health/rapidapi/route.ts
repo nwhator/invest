@@ -43,9 +43,22 @@ function extractLegs(item: unknown): Array<{ selection: string; bookmaker: strin
   const direct = getProp(item, "legs") ?? getProp(item, "bets");
   const outcomes = getProp(item, "outcomes");
 
+  const unwrap = (x: unknown): unknown => {
+    // Some APIs wrap outcomes like { outcomes: [...] } or { items: [...] }
+    if (x && typeof x === "object") {
+      const o = x as JsonObject;
+      if (Array.isArray(o.outcomes)) return o.outcomes;
+      if (Array.isArray(o.items)) return o.items;
+      if (Array.isArray(o.data)) return o.data;
+      if (Array.isArray(o.results)) return o.results;
+    }
+    return x;
+  };
+
   const toArr = (x: unknown): unknown[] => {
-    if (Array.isArray(x)) return x;
-    if (x && typeof x === "object") return Object.values(x as Record<string, unknown>);
+    const u = unwrap(x);
+    if (Array.isArray(u)) return u;
+    if (u && typeof u === "object") return Object.values(u as Record<string, unknown>);
     return [];
   };
 
@@ -81,8 +94,28 @@ export async function GET() {
     let twoLegNonDrawCount = 0;
     let twoLegOddsParsableCount = 0;
 
+    const outcomesCountHistogram: Record<string, number> = {};
+
+    const sample = items[0] ?? null;
+    const sampleOutcomesRaw = sample ? getProp(sample, "outcomes") : undefined;
+    const sampleOutcomesUnwrapped = (() => {
+      if (!sampleOutcomesRaw) return undefined;
+      if (sampleOutcomesRaw && typeof sampleOutcomesRaw === "object") {
+        const o = sampleOutcomesRaw as JsonObject;
+        if (Array.isArray(o.outcomes)) return o.outcomes;
+        if (Array.isArray(o.items)) return o.items;
+        if (Array.isArray(o.data)) return o.data;
+        if (Array.isArray(o.results)) return o.results;
+      }
+      return sampleOutcomesRaw;
+    })();
+
     for (const item of items) {
       const legs = extractLegs(item);
+
+      // Track outcome counts (based on extraction) so we can see if feed is mostly 3-way.
+      outcomesCountHistogram[String(legs.length)] = (outcomesCountHistogram[String(legs.length)] ?? 0) + 1;
+
       if (legs.length !== 2) continue;
       twoLegCount += 1;
 
@@ -106,6 +139,21 @@ export async function GET() {
       twoLegCount,
       twoLegNonDrawCount,
       twoLegOddsParsableCount,
+      outcomesCountHistogram,
+      sampleOutcomesType: sampleOutcomesRaw == null ? null : Array.isArray(sampleOutcomesRaw) ? "array" : typeof sampleOutcomesRaw,
+      sampleOutcomesUnwrappedType:
+        sampleOutcomesUnwrapped == null ? null : Array.isArray(sampleOutcomesUnwrapped) ? "array" : typeof sampleOutcomesUnwrapped,
+      sampleExtractedOutcomeCount: sample ? extractLegs(sample).length : 0,
+      sampleExtractedSelections: sample
+        ? extractLegs(sample)
+            .slice(0, 4)
+            .map((l) => l.selection)
+        : [],
+      sampleExtractedOddsDecimal: sample
+        ? extractLegs(sample)
+            .slice(0, 4)
+            .map((l) => toDecimalOdds(l.odds))
+        : [],
       topLevelKeys: raw && typeof raw === "object" ? Object.keys(raw as JsonObject).slice(0, 30) : [],
       sampleItemKeys: items[0] && typeof items[0] === "object" ? Object.keys(items[0] as JsonObject).slice(0, 30) : [],
     });
