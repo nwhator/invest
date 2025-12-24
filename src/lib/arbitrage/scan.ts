@@ -87,50 +87,89 @@ function extractArray(json: unknown): unknown[] {
 }
 
 function extractLegs(item: unknown): RapidLeg[] {
-  const rawLegs = pickFirst(
-    getProp(item, "legs"),
-    getProp(item, "bets"),
-    getProp(item, "outcomes"),
-    getProp(item, "advantages"),
-    getPath(item, ["arbitrage", "legs"]),
-    getPath(item, ["arbitrage", "bets"])
-  );
+  const direct = pickFirst(getProp(item, "legs"), getProp(item, "bets"), getPath(item, ["arbitrage", "legs"]), getPath(item, ["arbitrage", "bets"]));
 
-  if (!Array.isArray(rawLegs)) return [];
+  const outcomes = getProp(item, "outcomes");
 
-  return rawLegs
-    .map((l) => {
-      const bookmaker = normText(
-        pickFirst(
-          getProp(l, "sportsbook"),
-          getProp(l, "bookmaker"),
-          getProp(l, "book"),
-          getProp(l, "operator"),
-          getProp(l, "site"),
-          getProp(l, "sportsbookName")
-        )
-      );
-      const odds = pickFirst(
-        getProp(l, "odds"),
-        getProp(l, "price"),
-        getProp(l, "decimalOdds"),
-        getProp(l, "americanOdds"),
-        getProp(l, "lineOdds")
-      );
-      const selection = normText(
-        pickFirst(
-          getProp(l, "selection"),
-          getProp(l, "pick"),
-          getProp(l, "outcome"),
-          getProp(l, "team"),
-          getProp(l, "name"),
-          getProp(l, "side")
-        )
-      );
-      const line = pickFirst(getProp(l, "line"), getProp(l, "handicap"), getProp(l, "point"), getProp(l, "total"));
-      return { bookmaker: bookmaker || undefined, odds, selection, line };
-    })
-    .filter((l) => l.bookmaker || l.selection || l.odds != null);
+  const normalizeLeg = (l: unknown): RapidLeg => {
+    // Some shapes nest the best book/odds under `best`, `bestOdds`, or similar.
+    const best = pickFirst(getProp(l, "best"), getProp(l, "bestOdds"), getProp(l, "best_odds"), getProp(l, "bestOffer"));
+    const bookmaker = normText(
+      pickFirst(
+        getProp(l, "sportsbook"),
+        getProp(l, "bookmaker"),
+        getProp(l, "book"),
+        getProp(l, "operator"),
+        getProp(l, "site"),
+        getProp(l, "sportsbookName"),
+        getProp(best, "sportsbook"),
+        getProp(best, "bookmaker"),
+        getProp(best, "book"),
+        getProp(best, "operator"),
+        getProp(best, "site"),
+        getProp(best, "sportsbookName")
+      )
+    );
+
+    const odds = pickFirst(
+      getProp(l, "odds"),
+      getProp(l, "price"),
+      getProp(l, "decimalOdds"),
+      getProp(l, "americanOdds"),
+      getProp(l, "lineOdds"),
+      getProp(best, "odds"),
+      getProp(best, "price"),
+      getProp(best, "decimalOdds"),
+      getProp(best, "americanOdds"),
+      getProp(best, "lineOdds")
+    );
+
+    const selection = normText(
+      pickFirst(
+        getProp(l, "selection"),
+        getProp(l, "pick"),
+        getProp(l, "outcome"),
+        getProp(l, "team"),
+        getProp(l, "name"),
+        getProp(l, "side"),
+        getProp(l, "label"),
+        getProp(best, "selection"),
+        getProp(best, "name"),
+        getProp(best, "label")
+      )
+    );
+
+    const line = pickFirst(
+      getProp(l, "line"),
+      getProp(l, "handicap"),
+      getProp(l, "point"),
+      getProp(l, "total"),
+      getProp(best, "line"),
+      getProp(best, "handicap"),
+      getProp(best, "point"),
+      getProp(best, "total")
+    );
+
+    return { bookmaker: bookmaker || undefined, odds, selection, line };
+  };
+
+  const fromArray = (arr: unknown[]): RapidLeg[] =>
+    arr
+      .map(normalizeLeg)
+      .filter((l) => l.bookmaker || l.selection || l.odds != null);
+
+  if (Array.isArray(direct)) return fromArray(direct as unknown[]);
+
+  // RapidAPI sportsbook-api2 advantages feed commonly uses `outcomes` rather than `legs`.
+  if (Array.isArray(outcomes)) return fromArray(outcomes as unknown[]);
+
+  // If outcomes is an object keyed by outcome id/side, treat its values as outcomes.
+  if (outcomes && typeof outcomes === "object") {
+    const values = Object.values(outcomes as Record<string, unknown>);
+    if (values.length) return fromArray(values);
+  }
+
+  return [];
 }
 
 function parseStartTimeUtc(item: unknown): string | null {

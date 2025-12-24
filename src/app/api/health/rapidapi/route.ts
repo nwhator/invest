@@ -40,10 +40,18 @@ function toDecimalOdds(raw: unknown): number | null {
 }
 
 function extractLegs(item: unknown): Array<{ selection: string; bookmaker: string; odds: unknown }> {
-  const rawLegs = getProp(item, "legs") ?? getProp(item, "bets") ?? getProp(item, "outcomes") ?? getProp(item, "advantages");
-  if (!Array.isArray(rawLegs)) return [];
+  const direct = getProp(item, "legs") ?? getProp(item, "bets");
+  const outcomes = getProp(item, "outcomes");
 
-  return rawLegs
+  const toArr = (x: unknown): unknown[] => {
+    if (Array.isArray(x)) return x;
+    if (x && typeof x === "object") return Object.values(x as Record<string, unknown>);
+    return [];
+  };
+
+  const raw = Array.isArray(direct) ? direct : toArr(outcomes);
+
+  return raw
     .map((l) => {
       const bookmaker = normText(
         getProp(l, "sportsbook") ?? getProp(l, "bookmaker") ?? getProp(l, "book") ?? getProp(l, "operator") ?? getProp(l, "site")
