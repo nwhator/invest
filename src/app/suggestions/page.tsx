@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Arbitrage",
-  description: "Guaranteed arbitrage opportunities from the latest odds snapshots (best odds per outcome across books).",
+  description: "Guaranteed two-outcome arbitrage opportunities from live sportsbook feeds.",
 };
 
 export default async function SuggestionsPage() {

@@ -7,7 +7,7 @@ export const metadata: Metadata = {
     default: "Bet 2026",
     template: "%s · Bet 2026",
   },
-  description: "Scan upcoming sports events and find two-outcome arbitrage opportunities from the latest odds snapshots.",
+  description: "Scan upcoming sports events and find two-outcome arbitrage opportunities from live sportsbook feeds.",
   applicationName: "Bet 2026",
   alternates: {
     canonical: "/",
@@ -15,14 +15,14 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     title: "Bet 2026",
-    description: "Scan upcoming sports events and find two-outcome arbitrage opportunities from the latest odds snapshots.",
+    description: "Scan upcoming sports events and find two-outcome arbitrage opportunities from live sportsbook feeds.",
     url: "/",
     siteName: "Bet 2026",
   },
   twitter: {
     card: "summary",
     title: "Bet 2026",
-    description: "Scan upcoming sports events and find two-outcome arbitrage opportunities from the latest odds snapshots.",
+    description: "Scan upcoming sports events and find two-outcome arbitrage opportunities from live sportsbook feeds.",
   },
 };
 
@@ -50,12 +50,6 @@ export default function RootLayout({
                   href="/suggestions"
                 >
                   Arbitrage
-                </a>
-                <a
-                  className="rounded-full border border-zinc-200/80 bg-white/70 px-3 py-1.5 text-zinc-700 shadow-sm backdrop-blur hover:border-indigo-200 hover:bg-indigo-50/60 hover:text-zinc-900"
-                  href="/admin/ingest-odds"
-                >
-                  Admin
                 </a>
               </nav>
 

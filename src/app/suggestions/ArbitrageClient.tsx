@@ -18,6 +18,14 @@ function fmtPct(x: number) {
   return `${x.toFixed(2)}%`;
 }
 
+function fmtLeg(o: ArbOpportunity, side: "A" | "B") {
+  const label = side === "A" ? o.betLabels.A : o.betLabels.B;
+  const line = side === "A" ? o.outcomeLines?.A : o.outcomeLines?.B;
+  if (o.marketKey === "h2h") return label;
+  if (o.marketKey === "spreads") return `${label} ${fmtLine(line)}`;
+  return `${label} ${fmtLine(line)}`;
+}
+
 function fmtLine(x: number | null | undefined) {
   if (x == null) return "?";
   const n = Number(x);
@@ -128,8 +136,8 @@ export default function ArbitrageClient(props: {
             {opportunities.length === 0 ? (
               <tr>
                 <td className="p-3 text-zinc-600" colSpan={6}>
-                  No arbitrage found. This can mean either (a) there are currently no true arbs, or (b) you have no recent
-                  odds snapshots yet. Use Admin → ingest odds, then refresh.
+                  No arbitrage found. This can mean either (a) there are currently no true arbs, or (b) the live feed is
+                  temporarily empty. Try Refresh.
                 </td>
               </tr>
             ) : (
@@ -196,10 +204,28 @@ export default function ArbitrageClient(props: {
                               <div className="text-xs font-medium uppercase tracking-wide text-zinc-500">Stakes</div>
                               <div className="mt-2 text-sm text-zinc-800">
                                 <div>
-                                  {o.outcomeLabels.A}: <span className="font-semibold">{plan ? fmtMoney(plan.stakeA) : "—"}</span>
+                                  <div className="font-medium text-zinc-900">Leg A</div>
+                                  <div className="mt-1">
+                                    Play: <span className="font-semibold">{fmtLeg(o, "A")}</span>
+                                  </div>
+                                  <div className="text-xs text-zinc-600">
+                                    Book: <span className="font-mono">{o.bestOdds.A.bookmaker}</span> · Odds: {o.bestOdds.A.odds}
+                                  </div>
+                                  <div className="mt-1">
+                                    Stake: <span className="font-semibold">{plan ? fmtMoney(plan.stakeA) : "—"}</span>
+                                  </div>
                                 </div>
-                                <div>
-                                  {o.outcomeLabels.B}: <span className="font-semibold">{plan ? fmtMoney(plan.stakeB) : "—"}</span>
+                                <div className="mt-3">
+                                  <div className="font-medium text-zinc-900">Leg B</div>
+                                  <div className="mt-1">
+                                    Play: <span className="font-semibold">{fmtLeg(o, "B")}</span>
+                                  </div>
+                                  <div className="text-xs text-zinc-600">
+                                    Book: <span className="font-mono">{o.bestOdds.B.bookmaker}</span> · Odds: {o.bestOdds.B.odds}
+                                  </div>
+                                  <div className="mt-1">
+                                    Stake: <span className="font-semibold">{plan ? fmtMoney(plan.stakeB) : "—"}</span>
+                                  </div>
                                 </div>
                               </div>
                               <div className="mt-1 text-xs text-zinc-500">Total ≈ bankroll</div>
