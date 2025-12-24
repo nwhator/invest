@@ -72,27 +72,23 @@ async function ingestOdds() {
     markets: string;
   }> = [];
 
-  // Resolve keys using the official /v4/sports list and skip invalid ones.
-  // (Also supports the special 'upcoming' key.)
-  const { keys: resolvedSportKeys, skipped } = await resolveSportKeys(cfg.sportKeys);
+  // Arbitrage scanner is 2-outcome only, so ingest h2h markets.
+  const markets = "h2h";
 
-  if (resolvedSportKeys.length === 0) {
-    throw new Error(
-      `No valid sport keys resolved from ODDS_SPORT_KEYS.\n` +
-        `Set ODDS_SPORT_KEYS to one or more keys from /api/admin/odds-sports?secret=YOUR_ADMIN_SECRET.\n` +
-        `Skipped invalid keys: ${skipped.join(",") || "(none)"}`
-    );
-  }
+  const { keys: resolvedSportKeys, skipped } = await resolveSportKeys(cfg.sportKeys.length ? cfg.sportKeys : ["upcoming"]);
+  const sportKeys = resolvedSportKeys.length ? resolvedSportKeys : ["upcoming"];
 
-  for (const sportKey of resolvedSportKeys) {
-    const runAttempt = async (attempt: "primary" | "fallback", regions: string, markets: string) => {
+  for (const sportKey of sportKeys) {
+    const runAttempt = async (attempt: "primary" | "fallback", regions: string) => {
       let events;
       try {
         events = await fetchOddsForSport(sportKey, { regions, markets });
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         if (msg.includes("UNKNOWN_SPORT")) {
-          throw new Error(`${msg}\nHint: call /api/admin/odds-sports?secret=YOUR_ADMIN_SECRET to see valid keys, then set ODDS_SPORT_KEYS accordingly.`);
+          throw new Error(
+            `${msg}\nHint: call /api/admin/odds-sports?secret=YOUR_ADMIN_SECRET to see valid keys, then set ODDS_SPORT_KEYS accordingly (or use ODDS_SPORT_KEYS=upcoming).`
+          );
         }
         throw e;
       }
@@ -130,6 +126,7 @@ async function ingestOdds() {
         const snapshots: SnapshotInsert[] = [];
         for (const bookmaker of ev.bookmakers ?? []) {
           for (const market of bookmaker.markets ?? []) {
+            if (market.key !== "h2h") continue;
             for (const out of market.outcomes ?? []) {
               snapshots.push({
                 event_id: upserted.id,
@@ -172,23 +169,21 @@ async function ingestOdds() {
       return { eventsFetched: events.length, eventsWithBookmakers, snapshotsPrepared };
     };
 
-    // Primary attempt: your configured regions/markets.
-    const primary = await runAttempt("primary", cfg.regions, cfg.markets);
+    const primary = await runAttempt("primary", cfg.regions);
 
-    // If the API returns events but no odds (common for some regions/markets), retry.
+    // If we got events but no snapshot rows (often caused by region mismatch), retry with broad regions.
     if (primary.eventsFetched > 0 && primary.snapshotsPrepared === 0) {
-      // Fallback attempt: broader non-US regions + h2h-only.
-      await runAttempt("fallback", "eu,uk,au", "h2h");
+      await runAttempt("fallback", "us,eu,uk,au");
     }
   }
 
   return {
     upsertedEvents,
     insertedSnapshots,
-    usedSportKeys: resolvedSportKeys,
+    usedSportKeys: sportKeys,
     skippedSportKeys: skipped,
     debugBySport,
-    cfg: { regions: cfg.regions, markets: cfg.markets, oddsFormat: cfg.oddsFormat, dateFormat: cfg.dateFormat },
+    cfg: { regions: cfg.regions, markets, oddsFormat: cfg.oddsFormat, dateFormat: cfg.dateFormat },
   };
 }
 

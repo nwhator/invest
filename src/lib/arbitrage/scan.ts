@@ -92,6 +92,12 @@ export async function scanArbitrage(opts?: {
 
   const latestRows = rows.filter((r) => r.snapshot_time_utc === latestByEvent.get(r.event_id));
 
+  // Track the newest snapshot time across all candidate events.
+  const globalLastUpdated = latestRows.reduce((max, r) => {
+    const t = String(r.snapshot_time_utc);
+    return t > max ? t : max;
+  }, String(latestRows[0]!.snapshot_time_utc));
+
   // Group by event.
   const byEvent = new Map<string, SnapshotJoinRow[]>();
   for (const r of latestRows) {
@@ -101,7 +107,6 @@ export async function scanArbitrage(opts?: {
   }
 
   const opportunities: ArbOpportunity[] = [];
-  let globalLastUpdated = latestRows[0]!.snapshot_time_utc;
 
   for (const [eventId, evRows] of byEvent.entries()) {
     if (!evRows.length) continue;
@@ -114,7 +119,18 @@ export async function scanArbitrage(opts?: {
     const awayName = String(sample.events.away_name);
 
     const lastUpdatedUtc = String(sample.snapshot_time_utc);
-    if (lastUpdatedUtc > globalLastUpdated) globalLastUpdated = lastUpdatedUtc;
+
+    // Strictly enforce two-outcome markets:
+    // If the latest snapshot contains a draw (common in soccer) or any extra outcome,
+    // skip it entirely. This scanner is 2-way arb only.
+    const outcomeKeys = new Set<string>();
+    for (const r of evRows) {
+      const odds = Number(r.price);
+      if (!Number.isFinite(odds) || odds <= 1) continue;
+      outcomeKeys.add(String(r.outcome_key));
+    }
+    if (outcomeKeys.has("draw")) continue;
+    if (!(outcomeKeys.size === 2 && outcomeKeys.has("home") && outcomeKeys.has("away"))) continue;
 
     let bestA: ArbBestOdd | null = null;
     let bestB: ArbBestOdd | null = null;
