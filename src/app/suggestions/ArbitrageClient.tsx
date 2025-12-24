@@ -3,7 +3,7 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { stakePlan } from "@/lib/arbitrage/math";
-import type { ArbOpportunity } from "@/lib/arbitrage/scan";
+import type { ArbOpportunity } from "@/lib/arbitrage/types";
 
 function formatUtc(iso: string) {
   return new Date(iso).toLocaleString(undefined, { timeZoneName: "short" });
@@ -17,6 +17,14 @@ function fmtMoney(x: number) {
 function fmtPct(x: number) {
   if (!Number.isFinite(x)) return "—";
   return `${x.toFixed(2)}%`;
+}
+
+function fmtLine(x: number | null | undefined) {
+  if (x == null) return "?";
+  const n = Number(x);
+  if (!Number.isFinite(n)) return "?";
+  const s = String(n);
+  return n > 0 ? `+${s}` : s;
 }
 
 function roiTone(roi: number) {
@@ -121,7 +129,8 @@ export default function ArbitrageClient(props: {
             {opportunities.length === 0 ? (
               <tr>
                 <td className="p-3 text-zinc-600" colSpan={6}>
-                  No arbitrage found. Ingest more bookmakers/regions and try again.
+                  No arbitrage found. This can mean either (a) there are currently no true arbs, or (b) you have no recent
+                  odds snapshots yet. Use Admin → ingest odds, then refresh.
                 </td>
               </tr>
             ) : (
@@ -147,6 +156,11 @@ export default function ArbitrageClient(props: {
                         >
                           {o.outcomeLabels.A} vs {o.outcomeLabels.B}
                         </Link>
+                        <div className="mt-1 text-xs text-zinc-500">
+                          {o.marketKey === "h2h"
+                            ? "h2h"
+                            : `spreads: ${fmtLine(o.outcomeLines?.A)} / ${fmtLine(o.outcomeLines?.B)}`}
+                        </div>
                         <div className="mt-1 text-xs text-zinc-500 sm:hidden">
                           <span className="inline-flex items-center rounded-full bg-indigo-50 px-2 py-0.5 font-mono text-[11px] text-indigo-700 ring-1 ring-inset ring-indigo-100">
                             {o.sport}

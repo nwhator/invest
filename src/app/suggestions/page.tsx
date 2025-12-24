@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Arbitrage",
-  description: "Two-outcome arbitrage opportunities from the latest odds snapshots (best odds per outcome across books).",
+  description: "Guaranteed arbitrage opportunities from the latest odds snapshots (best odds per outcome across books).",
 };
 
 type Props = {
@@ -28,7 +28,9 @@ export default async function SuggestionsPage({ searchParams }: Props) {
       <p className="mt-2 text-sm text-zinc-600">
         Finds guaranteed arbitrage when the best available odds for each outcome (across all bookmakers) satisfy
         {" "}
-        <span className="font-mono">(1/oddsA + 1/oddsB) &lt; 1</span>. Only two-outcome {"h2h"} markets are included.
+        <span className="font-mono">(1/oddsA + 1/oddsB) &lt; 1</span>. Only two-outcome markets are included (no-draw {"h2h"} and
+        {" "}
+        {"spreads"} / handicap).
       </p>
 
       <ArbitrageClient
